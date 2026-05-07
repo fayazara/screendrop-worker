@@ -105,12 +105,21 @@ const BaseLayout: FC<
           },
         };
       </script>`}
-      {html`<style>
-        body {
-          margin: 0;
-          -webkit-font-smoothing: antialiased;
-        }
-      </style>`}
+		{html`<style>
+				body {
+					margin: 0;
+					-webkit-font-smoothing: antialiased;
+				}
+				@keyframes shimmer {
+					0% { background-position: -600px 0; }
+					100% { background-position: 600px 0; }
+				}
+				.shimmer {
+					background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+					background-size: 600px 100%;
+					animation: shimmer 1.4s ease-in-out infinite;
+				}
+			</style>`}
     </head>
     <body class="font-sans">{children}</body>
   </html>
@@ -218,11 +227,20 @@ const ImagePage: FC<{
         <main class="flex flex-1 flex-col px-2 pb-2 gap-2">
           <div class="flex grow items-center justify-center overflow-auto rounded-2xl bg-white shadow-xs ring-1 ring-neutral-950/5">
             <div class="max-h-full w-full max-w-7xl rounded-xl border border-neutral-300 bg-neutral-50 p-1 -mt-1">
-              <div class="rounded-lg shadow-md ring-1 ring-neutral-200 shadow-black/[.07]">
+              <div class="rounded-lg shadow-md ring-1 ring-neutral-200 shadow-black/[.07] overflow-hidden">
+                {/* Skeleton placeholder — shown until image loads */}
+                <div
+                  id="img-skeleton"
+                  class="shimmer w-full rounded-lg"
+                  style={`aspect-ratio: ${upload.width && upload.height ? `${upload.width} / ${upload.height}` : "16 / 9"}`}
+                />
+                {/* Actual image — hidden until loaded */}
                 <img
+                  id="main-img"
                   src={imageSrc}
                   alt={escapeHtml(upload.filename)}
                   class="max-h-full w-full rounded-lg bg-white object-contain"
+                  style="display:none"
                 />
               </div>
             </div>
@@ -283,12 +301,26 @@ const ImagePage: FC<{
             showToast("Failed to copy");
           }
         }
-        document.querySelectorAll("[id^=btn-link]").forEach(function (el) {
-          el.addEventListener("click", copyLink);
-        });
-        document.querySelectorAll("[id^=btn-copy]").forEach(function (el) {
-          el.addEventListener("click", copyImage);
-        });
+			document.querySelectorAll("[id^=btn-link]").forEach(function (el) {
+					el.addEventListener("click", copyLink);
+				});
+				document.querySelectorAll("[id^=btn-copy]").forEach(function (el) {
+					el.addEventListener("click", copyImage);
+				});
+				var img = document.getElementById("main-img");
+				var skeleton = document.getElementById("img-skeleton");
+				function revealImage() {
+					if (skeleton) skeleton.style.display = "none";
+					if (img) img.style.display = "";
+				}
+				if (img) {
+					if (img.complete && img.naturalWidth > 0) {
+						revealImage();
+					} else {
+						img.addEventListener("load", revealImage);
+						img.addEventListener("error", revealImage);
+					}
+				}
       </script>`}
     </BaseLayout>
   );
