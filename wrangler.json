@@ -1,0 +1,25 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "openshot-hono-worker",
+	"main": "./src/worker/index.tsx",
+	"compatibility_date": "2025-10-08",
+	"compatibility_flags": ["nodejs_compat"],
+	"observability": {
+		"enabled": true
+	},
+	"upload_source_maps": true,
+	"vars": {
+		"AUTHOR_NAME": "Anonymous",
+		"AUTHOR_AVATAR": "https://api.dicebear.com/9.x/shapes/svg?seed=OpenShot"
+	},
+	"r2_buckets": [
+		{
+			"binding": "BUCKET"
+		}
+	],
+	"d1_databases": [
+		{
+			"binding": "DB"
+		}
+	]
+}
