@@ -9,8 +9,8 @@
 	},
 	"upload_source_maps": true,
 	"vars": {
-		"AUTHOR_NAME": "Anonymous",
-		"AUTHOR_AVATAR": "https://api.dicebear.com/9.x/shapes/svg?seed=OpenShot"
+		"AUTHOR_NAME": "Fayaz Ahmed",
+		"AUTHOR_AVATAR": "https://github.com/fayazara.png"
 	},
 	"r2_buckets": [
 		{
