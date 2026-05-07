@@ -14,7 +14,8 @@
 	},
 	"r2_buckets": [
 		{
-			"binding": "BUCKET"
+			"binding": "BUCKET",
+			"bucket_name": "filebucket"
 		}
 	],
 	"d1_databases": [
