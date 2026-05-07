@@ -111,13 +111,13 @@ const BaseLayout: FC<
 					-webkit-font-smoothing: antialiased;
 				}
 				@keyframes shimmer {
-					0% { background-position: -600px 0; }
-					100% { background-position: 600px 0; }
+					0% { background-position: -1200px 0; }
+					100% { background-position: 1200px 0; }
 				}
 				.shimmer {
-					background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
-					background-size: 600px 100%;
-					animation: shimmer 1.4s ease-in-out infinite;
+					background: linear-gradient(90deg, #f0f0f0 0%, #f7f7f8 20%, #fafafa 50%, #f7f7f8 80%, #f0f0f0 100%);
+					background-size: 1200px 100%;
+					animation: shimmer 2.4s ease-in-out infinite;
 				}
 			</style>`}
     </head>
