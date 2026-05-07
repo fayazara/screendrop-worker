@@ -39,8 +39,8 @@ const LinkIcon: FC<{ class?: string }> = ({ class: cls }) => (
   <img
     src="https://api.iconify.design/lucide:link-2.svg?color=%23525252"
     alt="Link"
-    width="18"
-    height="18"
+    width="16"
+    height="16"
     class={cls}
   />
 );
@@ -49,16 +49,6 @@ const CopyIcon: FC<{ class?: string }> = ({ class: cls }) => (
   <img
     src="https://api.iconify.design/lucide:copy.svg?color=%23525252"
     alt="Copy"
-    width="18"
-    height="18"
-    class={cls}
-  />
-);
-
-const DownloadIcon: FC<{ class?: string }> = ({ class: cls }) => (
-  <img
-    src="https://api.iconify.design/lucide:download.svg?color=%23525252"
-    alt="Download"
     width="16"
     height="16"
     class={cls}
@@ -168,75 +158,63 @@ const ImagePage: FC<{
       <div class="relative isolate flex h-dvh w-full flex-col bg-neutral-100">
         {/* Header */}
         <header class="flex items-center px-4">
-          <div class="min-w-0 flex-1">
-            <nav class="flex flex-1 items-center justify-between gap-4 py-2.5">
-              {/* Left: author + file info */}
-              <div class="flex items-center gap-2.5">
-                <img
-                  src={author.avatar}
-                  class="h-7 w-7 rounded-full"
-                  alt={escapeHtml(author.name)}
-                />
-                <div>
-                  <p class="text-sm font-medium text-neutral-700">
-                    {upload.filename}
-                  </p>
-                  <p class="text-xs text-neutral-400">
-                    {author.name}
-                    {dimensions && (
-                      <>
-                        <span class="mx-1.5">&middot;</span>
-                        {dimensions}
-                      </>
-                    )}
-                    <span class="mx-1.5">&middot;</span>
-                    {formatBytes(upload.size)}
-                    <span class="mx-1.5">&middot;</span>
-                    {formatTimeAgo(upload.created_at)}
-                  </p>
-                </div>
+          <nav class="flex flex-1 items-center justify-between gap-4 py-2.5 min-w-0">
+            {/* Left: author + file info */}
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img
+                src={author.avatar}
+                class="h-7 w-7 rounded-full shrink-0"
+                alt={escapeHtml(author.name)}
+              />
+              <div class="min-w-0">
+                <p class="font-medium text-neutral-500 truncate">
+                  {upload.filename}
+                </p>
+                <p class="text-xs text-neutral-500 truncate font-medium">
+                  {author.name}
+                  {dimensions && (
+                    <>
+                      <span class="mx-1.5">&middot;</span>
+                      {dimensions}
+                    </>
+                  )}
+                  <span class="mx-1.5">&middot;</span>
+                  {formatBytes(upload.size)}
+                  <span class="mx-1.5">&middot;</span>
+                  {formatTimeAgo(upload.created_at)}
+                </p>
               </div>
+            </div>
 
-              {/* Right: actions */}
-              <div class="flex items-center gap-1">
-                <button
-                  id="btn-link"
-                  title="Copy link"
-                  class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
-                >
-                  <LinkIcon />
-                </button>
-                <button
-                  id="btn-copy"
-                  title="Copy image"
-                  class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
-                >
-                  <CopyIcon />
-                </button>
-                {/* Desktop download */}
-                <a
-                  href={imageSrc}
-                  download={upload.filename}
-                  class="hidden sm:flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-900 h-9 ring-1 ring-neutral-200 transition"
-                >
-                  Download
-                </a>
-                {/* Mobile download */}
-                <a
-                  href={imageSrc}
-                  download={upload.filename}
-                  title="Download"
-                  class="flex sm:hidden rounded-lg p-2 transition hover:bg-neutral-200"
-                >
-                  <DownloadIcon />
-                </a>
-              </div>
-            </nav>
-          </div>
+            {/* Right: actions (desktop only) */}
+            <div class="hidden sm:flex items-center gap-1 shrink-0">
+              <button
+                id="btn-link"
+                title="Copy link"
+                class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+              >
+                <LinkIcon />
+              </button>
+              <button
+                id="btn-copy"
+                title="Copy image"
+                class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+              >
+                <CopyIcon />
+              </button>
+              <a
+                href={imageSrc}
+                download={upload.filename}
+                class="hidden sm:flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-950 h-9 ring-1 ring-neutral-200 transition"
+              >
+                Download
+              </a>
+            </div>
+          </nav>
         </header>
 
         {/* Image */}
-        <main class="flex flex-1 flex-col px-2 pb-2">
+        <main class="flex flex-1 flex-col px-2 pb-2 gap-2">
           <div class="flex grow items-center justify-center overflow-auto rounded-2xl bg-white shadow-xs ring-1 ring-neutral-950/5">
             <div class="max-h-full w-full max-w-7xl rounded-xl border border-neutral-300 bg-neutral-50 p-1 -mt-1">
               <div class="rounded-lg shadow-md ring-1 ring-neutral-200 shadow-black/[.07]">
@@ -247,6 +225,31 @@ const ImagePage: FC<{
                 />
               </div>
             </div>
+          </div>
+
+          {/* Mobile action bar */}
+          <div class="flex sm:hidden items-center justify-end gap-1 px-2 py-1.5">
+            <button
+              id="btn-link-m"
+              title="Copy link"
+              class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+            >
+              <LinkIcon />
+            </button>
+            <button
+              id="btn-copy-m"
+              title="Copy image"
+              class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+            >
+              <CopyIcon />
+            </button>
+            <a
+              href={imageSrc}
+              download={upload.filename}
+              class="flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-900 h-9 ring-1 ring-neutral-200 transition"
+            >
+              Download
+            </a>
           </div>
         </main>
       </div>
@@ -263,26 +266,28 @@ const ImagePage: FC<{
             t.classList.add("opacity-0");
           }, 2000);
         }
-        document
-          .getElementById("btn-link")
-          .addEventListener("click", function () {
-            navigator.clipboard.writeText(window.location.href);
-            showToast("Link copied");
-          });
-        document
-          .getElementById("btn-copy")
-          .addEventListener("click", async function () {
-            try {
-              var res = await fetch("${imageSrc}");
-              var blob = await res.blob();
-              await navigator.clipboard.write([
-                new ClipboardItem({ [blob.type]: blob }),
-              ]);
-              showToast("Image copied");
-            } catch (e) {
-              showToast("Failed to copy");
-            }
-          });
+        function copyLink() {
+          navigator.clipboard.writeText(window.location.href);
+          showToast("Link copied");
+        }
+        async function copyImage() {
+          try {
+            var res = await fetch("${imageSrc}");
+            var blob = await res.blob();
+            await navigator.clipboard.write([
+              new ClipboardItem({ [blob.type]: blob }),
+            ]);
+            showToast("Image copied");
+          } catch (e) {
+            showToast("Failed to copy");
+          }
+        }
+        document.querySelectorAll("[id^=btn-link]").forEach(function (el) {
+          el.addEventListener("click", copyLink);
+        });
+        document.querySelectorAll("[id^=btn-copy]").forEach(function (el) {
+          el.addEventListener("click", copyImage);
+        });
       </script>`}
     </BaseLayout>
   );
@@ -318,6 +323,16 @@ const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
 // ── API Routes ───────────────────────────────────────────
 
 app.use("/api/*", cors());
+
+// Connection check (token-protected)
+app.get(
+	"/api/ping",
+	async (c, next) => {
+		const auth = bearerAuth({ token: c.env.UPLOAD_TOKEN });
+		return auth(c, next);
+	},
+	(c) => c.json({ ok: true })
+);
 
 // Upload (token-protected)
 app.post(
