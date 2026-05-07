@@ -414,6 +414,64 @@ app.post(
   },
 );
 
+// Register metadata for a file already uploaded directly to R2 via S3 API.
+// The mac app uploads to R2 first, then calls this to create the D1 row.
+app.post(
+  "/api/register",
+  async (c, next) => {
+    const auth = bearerAuth({ token: c.env.UPLOAD_TOKEN });
+    return auth(c, next);
+  },
+  async (c) => {
+    const body = await c.req.json<{
+      r2_key: string;
+      filename: string;
+      content_type: string;
+      size: number;
+      width?: number | null;
+      height?: number | null;
+    }>();
+
+    if (!body.r2_key || !body.filename) {
+      return c.json({ error: "r2_key and filename are required" }, 400);
+    }
+
+    // Verify the object actually exists in R2
+    const head = await c.env.BUCKET.head(body.r2_key);
+    if (!head) {
+      return c.json({ error: "Object not found in R2" }, 404);
+    }
+
+    const id = crypto.randomUUID().split("-")[0]!;
+
+    await c.env.DB.prepare(
+      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        id,
+        body.filename,
+        body.content_type || "image/png",
+        body.size ?? head.size,
+        body.width ?? null,
+        body.height ?? null,
+        body.r2_key,
+      )
+      .run();
+
+    const origin = new URL(c.req.url).origin;
+    return c.json(
+      {
+        id,
+        url: `${origin}/${id}`,
+        filename: body.filename,
+        size: body.size ?? head.size,
+      },
+      201,
+    );
+  },
+);
+
 // Serve raw image from R2
 app.get("/api/image/:id", async (c) => {
   const { id } = c.req.param();
