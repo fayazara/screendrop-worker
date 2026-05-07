@@ -436,12 +436,6 @@ app.post(
       return c.json({ error: "r2_key and filename are required" }, 400);
     }
 
-    // Verify the object actually exists in R2
-    const head = await c.env.BUCKET.head(body.r2_key);
-    if (!head) {
-      return c.json({ error: "Object not found in R2" }, 404);
-    }
-
     const id = crypto.randomUUID().split("-")[0]!;
 
     await c.env.DB.prepare(
@@ -452,7 +446,7 @@ app.post(
         id,
         body.filename,
         body.content_type || "image/png",
-        body.size ?? head.size,
+        body.size ?? 0,
         body.width ?? null,
         body.height ?? null,
         body.r2_key,
@@ -465,7 +459,7 @@ app.post(
         id,
         url: `${origin}/${id}`,
         filename: body.filename,
-        size: body.size ?? head.size,
+        size: body.size ?? 0,
       },
       201,
     );
