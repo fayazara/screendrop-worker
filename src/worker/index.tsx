@@ -431,7 +431,7 @@ const VideoPage: FC<{
         {/* Video */}
         <main class="flex flex-1 flex-col px-2 pb-2 gap-2">
           <div class="flex grow items-center justify-center overflow-auto rounded-2xl bg-white shadow-xs ring-1 ring-neutral-950/5">
-            <div class="max-h-full w-full max-w-5xl rounded-xl border border-neutral-300 bg-neutral-900 p-1 -mt-1">
+            <div class="max-h-full w-full max-w-5xl rounded-xl border border-neutral-300 p-1 -mt-1">
               <div class="rounded-lg shadow-md ring-1 ring-neutral-200 shadow-black/[.07] overflow-hidden">
                 <video
                   id="main-video"
