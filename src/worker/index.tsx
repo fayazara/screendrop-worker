@@ -134,7 +134,21 @@ interface Upload {
   size: number;
   width: number | null;
   height: number | null;
+  media_type: string;
+  duration: number | null;
   created_at: string;
+}
+
+function formatDuration(seconds: number): string {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function isVideoContentType(contentType: string): boolean {
+  return contentType.startsWith("video/");
 }
 
 const ImagePage: FC<{
@@ -326,6 +340,156 @@ const ImagePage: FC<{
   );
 };
 
+// ── Video Viewer Page ────────────────────────────────────
+
+const VideoPage: FC<{
+  upload: Upload;
+  author: { name: string; avatar: string };
+  origin: string;
+}> = ({ upload, author, origin }) => {
+  const mediaSrc = `${origin}/api/media/${upload.id}`;
+  const durationStr = upload.duration ? formatDuration(upload.duration) : null;
+  const dimensions =
+    upload.width && upload.height
+      ? `${upload.width} \u00d7 ${upload.height}`
+      : null;
+  const description = `Shared by ${author.name} via OpenShot${durationStr ? ` \u00b7 ${durationStr}` : ""}${dimensions ? ` \u00b7 ${dimensions}` : ""}`;
+
+  return (
+    <BaseLayout
+      title={`${upload.filename} — OpenShot Cloud`}
+      description={description}
+      ogImage={undefined}
+    >
+      {/* Toast container */}
+      <div
+        id="toast"
+        class="pointer-events-none fixed inset-x-0 bottom-6 z-50 flex justify-center transition-opacity duration-300 opacity-0"
+      >
+        <div class="rounded-full bg-neutral-900 px-4 py-2 text-sm font-medium text-white shadow-lg">
+          <span id="toast-msg"></span>
+        </div>
+      </div>
+
+      <div class="relative isolate flex h-dvh w-full flex-col bg-neutral-100">
+        {/* Header */}
+        <header class="flex items-center px-4">
+          <nav class="flex flex-1 items-center justify-between gap-4 py-2.5 min-w-0">
+            {/* Left: author + file info */}
+            <div class="flex items-center gap-2.5 min-w-0">
+              <img
+                src={author.avatar}
+                class="h-7 w-7 rounded-full shrink-0"
+                alt={escapeHtml(author.name)}
+              />
+              <div class="min-w-0">
+                <p class="font-medium text-neutral-500 truncate">
+                  {upload.filename}
+                </p>
+                <p class="text-xs text-neutral-500 truncate font-medium">
+                  {author.name}
+                  {dimensions && (
+                    <>
+                      <span class="mx-1.5">&middot;</span>
+                      {dimensions}
+                    </>
+                  )}
+                  {durationStr && (
+                    <>
+                      <span class="mx-1.5">&middot;</span>
+                      {durationStr}
+                    </>
+                  )}
+                  <span class="mx-1.5">&middot;</span>
+                  {formatBytes(upload.size)}
+                  <span class="mx-1.5">&middot;</span>
+                  {formatTimeAgo(upload.created_at)}
+                </p>
+              </div>
+            </div>
+
+            {/* Right: actions (desktop only) */}
+            <div class="hidden sm:flex items-center gap-1 shrink-0">
+              <button
+                id="btn-link"
+                title="Copy link"
+                class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+              >
+                <LinkIcon />
+              </button>
+              <a
+                href={mediaSrc}
+                download={upload.filename}
+                class="hidden sm:flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-950 h-9 ring-1 ring-neutral-200 transition"
+              >
+                Download
+              </a>
+            </div>
+          </nav>
+        </header>
+
+        {/* Video */}
+        <main class="flex flex-1 flex-col px-2 pb-2 gap-2">
+          <div class="flex grow items-center justify-center overflow-auto rounded-2xl bg-white shadow-xs ring-1 ring-neutral-950/5">
+            <div class="max-h-full w-full max-w-5xl rounded-xl border border-neutral-300 bg-neutral-900 p-1 -mt-1">
+              <div class="rounded-lg shadow-md ring-1 ring-neutral-200 shadow-black/[.07] overflow-hidden">
+                <video
+                  id="main-video"
+                  src={mediaSrc}
+                  controls
+                  playsinline
+                  preload="metadata"
+                  class="w-full rounded-lg"
+                  style={upload.width && upload.height ? `aspect-ratio: ${upload.width} / ${upload.height}` : "aspect-ratio: 16 / 9"}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile action bar */}
+          <div class="flex sm:hidden items-center justify-end gap-1 px-2 py-1.5">
+            <button
+              id="btn-link-m"
+              title="Copy link"
+              class="cursor-pointer rounded-lg p-2 transition hover:bg-neutral-200"
+            >
+              <LinkIcon />
+            </button>
+            <a
+              href={mediaSrc}
+              download={upload.filename}
+              class="flex items-center gap-1.5 rounded-lg bg-white px-3.5 py-1.5 text-sm font-medium text-neutral-900 h-9 ring-1 ring-neutral-200 transition"
+            >
+              Download
+            </a>
+          </div>
+        </main>
+      </div>
+
+      {/* Client-side interactivity */}
+      {html`<script>
+        function showToast(msg) {
+          var t = document.getElementById("toast");
+          document.getElementById("toast-msg").textContent = msg;
+          t.classList.remove("opacity-0");
+          t.classList.add("opacity-100");
+          setTimeout(function () {
+            t.classList.remove("opacity-100");
+            t.classList.add("opacity-0");
+          }, 2000);
+        }
+        function copyLink() {
+          navigator.clipboard.writeText(window.location.href);
+          showToast("Link copied");
+        }
+        document.querySelectorAll("[id^=btn-link]").forEach(function (el) {
+          el.addEventListener("click", copyLink);
+        });
+      </script>`}
+    </BaseLayout>
+  );
+};
+
 // ── Home Page ────────────────────────────────────────────
 
 const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
@@ -385,24 +549,30 @@ app.post(
     const r2Key = `uploads/${id}/${file.name}`;
     const width = formData.get("width") as string | null;
     const height = formData.get("height") as string | null;
+    const durationStr = formData.get("duration") as string | null;
+    const mediaTypeField = formData.get("media_type") as string | null;
+    const contentType = file.type || "application/octet-stream";
+    const mediaType = mediaTypeField || (isVideoContentType(contentType) ? "video" : "image");
 
     await c.env.BUCKET.put(r2Key, file.stream(), {
-      httpMetadata: { contentType: file.type || "image/png" },
+      httpMetadata: { contentType },
       customMetadata: { originalName: file.name },
     });
 
     await c.env.DB.prepare(
-      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key, media_type, duration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         id,
         file.name,
-        file.type || "image/png",
+        contentType,
         file.size,
         width ? parseInt(width, 10) : null,
         height ? parseInt(height, 10) : null,
         r2Key,
+        mediaType,
+        durationStr ? parseFloat(durationStr) : null,
       )
       .run();
 
@@ -430,6 +600,8 @@ app.post(
       size: number;
       width?: number | null;
       height?: number | null;
+      media_type?: string;
+      duration?: number | null;
     }>();
 
     if (!body.r2_key || !body.filename) {
@@ -437,19 +609,23 @@ app.post(
     }
 
     const id = crypto.randomUUID().split("-")[0]!;
+    const contentType = body.content_type || "application/octet-stream";
+    const mediaType = body.media_type || (isVideoContentType(contentType) ? "video" : "image");
 
     await c.env.DB.prepare(
-      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key, media_type, duration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         id,
         body.filename,
-        body.content_type || "image/png",
+        contentType,
         body.size ?? 0,
         body.width ?? null,
         body.height ?? null,
         body.r2_key,
+        mediaType,
+        body.duration ?? null,
       )
       .run();
 
@@ -466,8 +642,8 @@ app.post(
   },
 );
 
-// Serve raw image from R2
-app.get("/api/image/:id", async (c) => {
+// Serve raw file (image or video) from R2
+async function serveMedia(c: any) {
   const { id } = c.req.param();
 
   const row = await c.env.DB.prepare(
@@ -487,21 +663,30 @@ app.get("/api/image/:id", async (c) => {
   object.writeHttpMetadata(headers);
 
   return new Response(object.body, { headers });
-});
+}
+
+app.get("/api/media/:id", serveMedia);
+// Keep /api/image/:id as a backward-compatible alias
+app.get("/api/image/:id", serveMedia);
 
 // ── Page Routes ──────────────────────────────────────────
 
-// Image viewer
+// Media viewer (image or video)
 app.get("/:id{[a-f0-9]{8}}", async (c) => {
   const { id } = c.req.param();
 
   const row = await c.env.DB.prepare(
-    "SELECT id, filename, content_type, size, width, height, created_at FROM uploads WHERE id = ?",
+    "SELECT id, filename, content_type, size, width, height, media_type, duration, created_at FROM uploads WHERE id = ?",
   )
     .bind(id)
     .first<Upload>();
 
   if (!row) return c.notFound();
+
+  // Default media_type for rows created before the migration
+  if (!row.media_type) {
+    row.media_type = isVideoContentType(row.content_type) ? "video" : "image";
+  }
 
   const author = {
     name: c.env.AUTHOR_NAME || "Anonymous",
@@ -510,6 +695,10 @@ app.get("/:id{[a-f0-9]{8}}", async (c) => {
       "https://api.dicebear.com/9.x/shapes/svg?seed=OpenShot",
   };
   const origin = new URL(c.req.url).origin;
+
+  if (row.media_type === "video") {
+    return c.html(<VideoPage upload={row} author={author} origin={origin} />);
+  }
 
   return c.html(<ImagePage upload={row} author={author} origin={origin} />);
 });
