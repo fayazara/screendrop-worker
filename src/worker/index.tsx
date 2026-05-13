@@ -161,11 +161,11 @@ const ImagePage: FC<{
     upload.width && upload.height
       ? `${upload.width} \u00d7 ${upload.height}`
       : null;
-  const description = `Shared by ${author.name} via OpenShot${dimensions ? ` \u00b7 ${dimensions}` : ""}`;
+  const description = `Shared by ${author.name} via Screendrop${dimensions ? ` \u00b7 ${dimensions}` : ""}`;
 
   return (
     <BaseLayout
-      title={`${upload.filename} — OpenShot Cloud`}
+      title={`${upload.filename} — Screendrop Cloud`}
       description={description}
       ogImage={imageSrc}
     >
@@ -353,11 +353,11 @@ const VideoPage: FC<{
     upload.width && upload.height
       ? `${upload.width} \u00d7 ${upload.height}`
       : null;
-  const description = `Shared by ${author.name} via OpenShot${durationStr ? ` \u00b7 ${durationStr}` : ""}${dimensions ? ` \u00b7 ${dimensions}` : ""}`;
+  const description = `Shared by ${author.name} via Screendrop${durationStr ? ` \u00b7 ${durationStr}` : ""}${dimensions ? ` \u00b7 ${dimensions}` : ""}`;
 
   return (
     <BaseLayout
-      title={`${upload.filename} — OpenShot Cloud`}
+      title={`${upload.filename} — Screendrop Cloud`}
       description={description}
       ogImage={undefined}
     >
@@ -496,8 +496,8 @@ const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
   author,
 }) => (
   <BaseLayout
-    title="OpenShot Cloud"
-    description="Screenshot sharing powered by OpenShot"
+    title="Screendrop Cloud"
+    description="Screenshot sharing powered by Screendrop"
   >
     <div class="flex h-dvh w-full flex-col items-center justify-center bg-neutral-100">
       <div class="flex flex-col items-center gap-4">
@@ -507,7 +507,7 @@ const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
           alt={escapeHtml(author.name)}
         />
         <div class="text-center">
-          <h1 class="text-xl font-semibold text-neutral-900">OpenShot Cloud</h1>
+          <h1 class="text-xl font-semibold text-neutral-900">Screendrop Cloud</h1>
           <p class="mt-1 text-sm text-neutral-500">
             Screenshot sharing by {author.name}
           </p>
@@ -766,7 +766,7 @@ app.get("/:id{[a-f0-9]{8}}", async (c) => {
     name: c.env.AUTHOR_NAME || "Anonymous",
     avatar:
       c.env.AUTHOR_AVATAR ||
-      "https://api.dicebear.com/9.x/shapes/svg?seed=OpenShot",
+      "https://api.dicebear.com/9.x/shapes/svg?seed=Screendrop",
   };
   const origin = new URL(c.req.url).origin;
 
@@ -783,7 +783,7 @@ app.get("/", (c) => {
     name: c.env.AUTHOR_NAME || "Anonymous",
     avatar:
       c.env.AUTHOR_AVATAR ||
-      "https://api.dicebear.com/9.x/shapes/svg?seed=OpenShot",
+      "https://api.dicebear.com/9.x/shapes/svg?seed=Screendrop",
   };
   return c.html(<HomePage author={author} />);
 });
