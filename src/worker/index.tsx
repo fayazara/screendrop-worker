@@ -642,6 +642,80 @@ app.post(
   },
 );
 
+// Stream-upload a file directly to R2 via the Worker binding, then create
+// the D1 metadata row. The request body IS the raw file bytes (not multipart).
+// Metadata is passed via headers to avoid buffering the body.
+//
+// Required headers:
+//   X-Filename:     original filename (e.g. "screenshot.png")
+//   Content-Type:   MIME type (e.g. "image/png")
+// Optional headers:
+//   X-Media-Type:   "image" | "video"  (auto-detected from Content-Type if omitted)
+//   X-Width:        pixel width
+//   X-Height:       pixel height
+//   X-Duration:     video duration in seconds
+//   Content-Length:  file size in bytes (set automatically by most HTTP clients)
+app.put(
+  "/api/upload",
+  async (c, next) => {
+    const auth = bearerAuth({ token: c.env.UPLOAD_TOKEN });
+    return auth(c, next);
+  },
+  async (c) => {
+    const filename = c.req.header("X-Filename");
+    const contentType = c.req.header("Content-Type") || "application/octet-stream";
+
+    if (!filename) {
+      return c.json({ error: "X-Filename header is required" }, 400);
+    }
+
+    const body = c.req.raw.body;
+    if (!body) {
+      return c.json({ error: "Request body is required" }, 400);
+    }
+
+    const id = crypto.randomUUID().split("-")[0]!;
+    const r2Key = `uploads/${id}/${filename}`;
+    const mediaTypeHeader = c.req.header("X-Media-Type");
+    const mediaType = mediaTypeHeader || (isVideoContentType(contentType) ? "video" : "image");
+    const width = c.req.header("X-Width");
+    const height = c.req.header("X-Height");
+    const duration = c.req.header("X-Duration");
+    const contentLength = c.req.header("Content-Length");
+
+    // Stream the request body directly to R2 — no buffering in Worker memory
+    await c.env.BUCKET.put(r2Key, body, {
+      httpMetadata: { contentType },
+      customMetadata: { originalName: filename },
+    });
+
+    const size = contentLength ? parseInt(contentLength, 10) : 0;
+
+    await c.env.DB.prepare(
+      `INSERT INTO uploads (id, filename, content_type, size, width, height, r2_key, media_type, duration)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+      .bind(
+        id,
+        filename,
+        contentType,
+        size,
+        width ? parseInt(width, 10) : null,
+        height ? parseInt(height, 10) : null,
+        r2Key,
+        mediaType,
+        duration ? parseFloat(duration) : null,
+      )
+      .run();
+
+    const origin = new URL(c.req.url).origin;
+    return c.json(
+      { id, url: `${origin}/${id}`, filename, size },
+      201,
+    );
+  },
+);
+
 // Serve raw file (image or video) from R2
 async function serveMedia(c: any) {
   const { id } = c.req.param();
