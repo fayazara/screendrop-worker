@@ -1,1 +1,3 @@
 UPLOAD_TOKEN=your-secret-token-here
+AUTHOR_NAME=Your Name
+AUTHOR_AVATAR=https://github.com/your-username.png

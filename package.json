@@ -16,7 +16,7 @@
 		"dev": "vite",
 		"build": "vite build",
 		"preview": "vite build && vite preview",
-		"deploy": "wrangler d1 migrations apply DB --remote && wrangler deploy",
+		"deploy": "wrangler d1 migrations apply DB --remote --no-x-provision && wrangler deploy --no-x-provision",
 		"db:migrate:local": "wrangler d1 migrations apply DB --local",
 		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
 		"cf-typegen": "wrangler types"

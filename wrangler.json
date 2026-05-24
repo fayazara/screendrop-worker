@@ -8,21 +8,14 @@
 		"enabled": true
 	},
 	"upload_source_maps": true,
-	"vars": {
-		"AUTHOR_NAME": "Fayaz Ahmed",
-		"AUTHOR_AVATAR": "https://github.com/fayazara.png"
-	},
 	"r2_buckets": [
 		{
-			"binding": "BUCKET",
-			"bucket_name": "filebucket"
+			"binding": "BUCKET"
 		}
 	],
 	"d1_databases": [
 		{
-			"binding": "DB",
-			"database_name": "openshot-hono-worker-db",
-			"database_id": "412df7b0-52ae-4db5-a5a4-76168e0d0256"
+			"binding": "DB"
 		}
 	]
 }

@@ -1,90 +1,132 @@
-# React + Vite + Hono + Cloudflare Workers
+# Screendrop Worker
 
-[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/cloudflare/templates/tree/main/vite-react-template)
+The cloud backend for [Screendrop](https://github.com/fayazara/screendrop), an open-source native macOS screenshot tool. This worker handles uploading, storing, and sharing screenshots and screen recordings via shareable links.
 
-This template provides a minimal setup for building a React application with TypeScript and Vite, designed to run on Cloudflare Workers. It features hot module replacement, ESLint integration, and the flexibility of Workers deployments.
+Built with [Hono](https://hono.dev) on [Cloudflare Workers](https://developers.cloudflare.com/workers/), using [R2](https://developers.cloudflare.com/r2/) for file storage and [D1](https://developers.cloudflare.com/d1/) for metadata.
 
-![React + TypeScript + Vite + Cloudflare Workers](https://imagedelivery.net/wSMYJvS3Xw-n339CbDyDIA/fc7b4b62-442b-4769-641b-ad4422d74300/public)
+[![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fayazara/screendrop-worker)
 
-<!-- dash-content-start -->
+## How it works
 
-🚀 Supercharge your web development with this powerful stack:
+1. The Screendrop macOS app captures a screenshot or screen recording
+2. The file is uploaded to this worker (either via multipart form or streaming upload)
+3. The worker stores the file in R2 and creates a metadata row in D1
+4. A shareable link is returned (e.g. `https://your-worker.workers.dev/a1b2c3d4`)
+5. Anyone with the link sees a clean viewer page with download, copy link, and copy image actions
 
-- [**React**](https://react.dev/) - A modern UI library for building interactive interfaces
-- [**Vite**](https://vite.dev/) - Lightning-fast build tooling and development server
-- [**Hono**](https://hono.dev/) - Ultralight, modern backend framework
-- [**Cloudflare Workers**](https://developers.cloudflare.com/workers/) - Edge computing platform for global deployment
+## Deploy
 
-### ✨ Key Features
+Click the button above to deploy to your Cloudflare account. The deploy flow will:
 
-- 🔥 Hot Module Replacement (HMR) for rapid development
-- 📦 TypeScript support out of the box
-- 🛠️ ESLint configuration included
-- ⚡ Zero-config deployment to Cloudflare's global network
-- 🎯 API routes with Hono's elegant routing
-- 🔄 Full-stack development setup
-- 🔎 Built-in Observability to monitor your Worker
+- Clone this repo into your GitHub account
+- Automatically provision an R2 bucket and D1 database
+- Prompt you to set an `UPLOAD_TOKEN` secret (choose a secure token and save it — you'll need it in the Screendrop app)
+- Deploy the worker and set up CI/CD via Workers Builds
 
-Get started in minutes with local development or deploy directly via the Cloudflare dashboard. Perfect for building modern, performant web applications at the edge.
+Once deployed, open the Screendrop app settings, go to the **Cloud** tab, and paste your worker URL and upload token.
 
-<!-- dash-content-end -->
+### Manual setup
 
-## Getting Started
-
-To start a new project with this template, run:
+If you prefer to deploy manually:
 
 ```bash
-npm create cloudflare@latest -- --template=cloudflare/templates/vite-react-template
+git clone https://github.com/fayazara/screendrop-worker.git
+cd screendrop-worker
+npm install
+
+# Set your upload token as a secret
+wrangler secret put UPLOAD_TOKEN
+
+# Deploy (auto-provisions R2 + D1, then applies migrations)
+npm run deploy
 ```
 
-A live deployment of this template is available at:
-[https://react-vite-template.templates.workers.dev](https://react-vite-template.templates.workers.dev)
+## API
+
+All API routes are CORS-enabled. Routes marked with a lock require a Bearer token (`UPLOAD_TOKEN`).
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| `GET` | `/api/ping` | Bearer | Connection health check |
+| `POST` | `/api/upload` | Bearer | Multipart file upload |
+| `PUT` | `/api/upload` | Bearer | Streaming upload (raw bytes, metadata via headers) |
+| `POST` | `/api/register` | Bearer | Register metadata for a file already uploaded to R2 |
+| `GET` | `/api/media/:id` | Public | Serve raw file from R2 |
+| `GET` | `/:id` | Public | Image/video viewer page with OG tags |
+
+### Upload (multipart)
+
+```bash
+curl -X POST https://your-worker.workers.dev/api/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "file=@screenshot.png" \
+  -F "width=1920" \
+  -F "height=1080"
+```
+
+### Upload (streaming)
+
+For large files. The request body is the raw file — no buffering in Worker memory.
+
+```bash
+curl -X PUT https://your-worker.workers.dev/api/upload \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: image/png" \
+  -H "X-Filename: screenshot.png" \
+  -H "X-Width: 1920" \
+  -H "X-Height: 1080" \
+  --data-binary @screenshot.png
+```
+
+### Response
+
+```json
+{
+  "id": "a1b2c3d4",
+  "url": "https://your-worker.workers.dev/a1b2c3d4",
+  "filename": "screenshot.png",
+  "size": 204800
+}
+```
+
+## Configuration
+
+### Secrets
+
+Set via `wrangler secret put`, or prompted automatically during the Deploy to Cloudflare flow (defined in `.dev.vars.example`):
+
+| Secret | Description | Required |
+|--------|-------------|----------|
+| `UPLOAD_TOKEN` | Shared token for authenticating uploads from the Screendrop app | Yes |
+| `AUTHOR_NAME` | Display name shown on shared pages (falls back to `Anonymous`) | No |
+| `AUTHOR_AVATAR` | Avatar URL shown on shared pages (falls back to a generated avatar) | No |
+
+### Bindings (auto-provisioned)
+
+| Type | Binding | Purpose |
+|------|---------|---------|
+| R2 | `BUCKET` | File storage for screenshots and recordings |
+| D1 | `DB` | SQLite database for upload metadata |
 
 ## Development
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Start the development server with:
-
-```bash
 npm run dev
 ```
 
-Your application will be available at [http://localhost:5173](http://localhost:5173).
+This starts a local dev server at `http://localhost:5173` with hot reload. Local R2 and D1 resources are created automatically and persist between runs.
 
-## Production
-
-Build your project for production:
+### Database migrations
 
 ```bash
-npm run build
+# Apply migrations locally
+npm run db:migrate:local
+
+# Apply migrations to production
+npm run db:migrate:remote
 ```
 
-Preview your build locally:
+## License
 
-```bash
-npm run preview
-```
-
-Deploy your project to Cloudflare Workers:
-
-```bash
-npm run build && npm run deploy
-```
-
-Monitor your workers:
-
-```bash
-npx wrangler tail
-```
-
-## Additional Resources
-
-- [Cloudflare Workers Documentation](https://developers.cloudflare.com/workers/)
-- [Vite Documentation](https://vitejs.dev/guide/)
-- [React Documentation](https://reactjs.org/)
-- [Hono Documentation](https://hono.dev/)
+MIT
