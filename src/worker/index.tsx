@@ -6,6 +6,55 @@ import { html } from "hono/html";
 
 const app = new Hono<{ Bindings: Env }>();
 
+// ── Schema provisioning ──────────────────────────────────
+//
+// With automatic resource provisioning, the D1 database is created during
+// `wrangler deploy` but no migrations are run, so the schema would be missing
+// on a fresh one-click deploy. Instead of relying on CI to run migrations, the
+// Worker provisions its own schema idempotently at runtime. This is safe to run
+// repeatedly and reconciles databases created by older migrations.
+
+// Per-isolate guard so we only run the (cheap, idempotent) DDL once per isolate.
+let schemaEnsured = false;
+
+async function ensureSchema(db: D1Database): Promise<string[]> {
+  const applied: string[] = [];
+
+  await db.exec(
+    "CREATE TABLE IF NOT EXISTS uploads (id TEXT PRIMARY KEY, filename TEXT NOT NULL, content_type TEXT NOT NULL, size INTEGER NOT NULL, width INTEGER, height INTEGER, r2_key TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT (datetime('now')), media_type TEXT NOT NULL DEFAULT 'image', duration REAL)",
+  );
+  await db.exec(
+    "CREATE INDEX IF NOT EXISTS idx_uploads_created_at ON uploads(created_at DESC)",
+  );
+
+  // Reconcile columns for databases created by the initial migration only.
+  const columns = await db.prepare("PRAGMA table_info(uploads)").all();
+  const columnNames = new Set(
+    (columns.results as Array<{ name: string }>).map((row) => row.name),
+  );
+
+  if (!columnNames.has("media_type")) {
+    await db.exec(
+      "ALTER TABLE uploads ADD COLUMN media_type TEXT NOT NULL DEFAULT 'image'",
+    );
+    applied.push("media_type");
+  }
+  if (!columnNames.has("duration")) {
+    await db.exec("ALTER TABLE uploads ADD COLUMN duration REAL");
+    applied.push("duration");
+  }
+
+  return applied;
+}
+
+/// Ensure the schema exists, at most once per isolate. Used to self-heal the
+/// upload paths so they work even if `/api/setup` was never called.
+async function ensureSchemaOnce(db: D1Database): Promise<void> {
+  if (schemaEnsured) return;
+  await ensureSchema(db);
+  schemaEnsured = true;
+}
+
 // ── Helpers ──────────────────────────────────────────────
 
 function escapeHtml(str: string): string {
@@ -521,6 +570,30 @@ const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
 
 app.use("/api/*", cors());
 
+// One-time setup / migration endpoint (token-protected).
+// Idempotently provisions the D1 schema. The Screendrop app calls this during
+// "Verify Connection" so a freshly one-click-deployed worker is ready to use
+// without anyone having to run `wrangler d1 migrations apply` manually.
+app.post(
+  "/api/setup",
+  async (c, next) => {
+    const auth = bearerAuth({ token: c.env.UPLOAD_TOKEN });
+    return auth(c, next);
+  },
+  async (c) => {
+    try {
+      const applied = await ensureSchema(c.env.DB);
+      schemaEnsured = true;
+      return c.json({ ok: true, applied });
+    } catch (err) {
+      return c.json(
+        { ok: false, error: err instanceof Error ? err.message : String(err) },
+        500,
+      );
+    }
+  },
+);
+
 // Connection check (token-protected)
 app.get(
 	"/api/ping",
@@ -539,6 +612,7 @@ app.post(
     return auth(c, next);
   },
   async (c) => {
+    await ensureSchemaOnce(c.env.DB);
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
     if (!file) {
@@ -593,6 +667,7 @@ app.post(
     return auth(c, next);
   },
   async (c) => {
+    await ensureSchemaOnce(c.env.DB);
     const body = await c.req.json<{
       r2_key: string;
       filename: string;
@@ -662,6 +737,7 @@ app.put(
     return auth(c, next);
   },
   async (c) => {
+    await ensureSchemaOnce(c.env.DB);
     const filename = c.req.header("X-Filename");
     const contentType = c.req.header("Content-Type") || "application/octet-stream";
 

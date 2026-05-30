@@ -1,6 +1,6 @@
 {
-	"name": "openshot-hono-worker",
-	"description": "OpenShot Cloud — screenshot sharing powered by Cloudflare Workers, R2, and D1",
+	"name": "screendrop-worker",
+	"description": "Screendrop Cloud — screenshot sharing powered by Cloudflare Workers, R2, and D1",
 	"dependencies": {
 		"hono": "4.11.1"
 	},
@@ -12,6 +12,19 @@
 		"wrangler": "4.88.0"
 	},
 	"private": true,
+	"cloudflare": {
+		"bindings": {
+			"UPLOAD_TOKEN": {
+				"description": "Shared secret used to authenticate uploads from the Screendrop app. **Open Screendrop → Settings → Cloud, copy the generated token, and paste it here.** Do not leave this blank."
+			},
+			"AUTHOR_NAME": {
+				"description": "Optional. Display name shown on shared pages (falls back to `Anonymous`)."
+			},
+			"AUTHOR_AVATAR": {
+				"description": "Optional. Avatar URL shown on shared pages, e.g. `https://github.com/your-username.png`."
+			}
+		}
+	},
 	"scripts": {
 		"dev": "vite",
 		"build": "vite build",
