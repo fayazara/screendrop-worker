@@ -30,6 +30,35 @@ The smoothest path is to start from the Screendrop app:
 idempotently on `/api/setup` and self-heals on the first upload), so there is no manual
 migration step after a one-click deploy. `Verify Connection` calls `/api/setup` for you.
 
+## Updating your worker
+
+When you deploy with the button, Cloudflare **clones** this repo into your own
+GitHub account and connects it to Workers Builds. Your copy is independent — it
+does not auto-update when this upstream repo changes. The Screendrop app checks
+the deployed worker's version (via `/api/version`) and shows a non-blocking
+notice when an update is available.
+
+Updating is a one-time setup, then a quick sync. Any push to your clone's
+default branch triggers a Workers Builds redeploy automatically, and the
+database schema migrates itself, so there are no manual steps after the push.
+
+```bash
+# In a local checkout of YOUR clone (one time only):
+git remote add upstream https://github.com/fayazara/screendrop-worker.git
+
+# To update:
+git fetch upstream
+git merge upstream/main      # or: git rebase upstream/main
+git push origin main         # Workers Builds redeploys automatically
+```
+
+Notes:
+
+- Your secrets (`UPLOAD_TOKEN`, `AUTHOR_NAME`, `AUTHOR_AVATAR`) live in Cloudflare,
+  not in the repo, so syncing never touches them.
+- If you edited the worker code yourself, you may need to resolve merge conflicts.
+- After the redeploy, click **Verify Connection** in the app to confirm.
+
 ### Manual setup
 
 If you prefer to deploy manually:
@@ -52,8 +81,9 @@ All API routes are CORS-enabled. Routes marked with a lock require a Bearer toke
 
 | Method | Route            | Auth   | Description                                         |
 | ------ | ---------------- | ------ | --------------------------------------------------- |
+| `GET`  | `/api/version`   | Public | Returns the deployed worker version                 |
 | `POST` | `/api/setup`     | Bearer | Idempotently provision the D1 schema                |
-| `GET`  | `/api/ping`      | Bearer | Connection health check                             |
+| `GET`  | `/api/ping`      | Bearer | Connection health check (returns `version`)         |
 | `POST` | `/api/upload`    | Bearer | Multipart file upload                               |
 | `PUT`  | `/api/upload`    | Bearer | Streaming upload (raw bytes, metadata via headers)  |
 | `POST` | `/api/register`  | Bearer | Register metadata for a file already uploaded to R2 |

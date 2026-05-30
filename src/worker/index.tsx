@@ -6,6 +6,10 @@ import { html } from "hono/html";
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Worker version. Bump this (and `version.json` + `package.json`) on each
+// release so the Screendrop app can detect when a deployed worker is behind.
+const WORKER_VERSION = "1.0.0";
+
 // ── Schema provisioning ──────────────────────────────────
 //
 // With automatic resource provisioning, the D1 database is created during
@@ -570,6 +574,10 @@ const HomePage: FC<{ author: { name: string; avatar: string } }> = ({
 
 app.use("/api/*", cors());
 
+// Public version probe so the app can read the deployed worker version
+// without a token (used to surface "update available" notices).
+app.get("/api/version", (c) => c.json({ version: WORKER_VERSION }));
+
 // One-time setup / migration endpoint (token-protected).
 // Idempotently provisions the D1 schema. The Screendrop app calls this during
 // "Verify Connection" so a freshly one-click-deployed worker is ready to use
@@ -584,7 +592,7 @@ app.post(
     try {
       const applied = await ensureSchema(c.env.DB);
       schemaEnsured = true;
-      return c.json({ ok: true, applied });
+      return c.json({ ok: true, applied, version: WORKER_VERSION });
     } catch (err) {
       return c.json(
         { ok: false, error: err instanceof Error ? err.message : String(err) },
@@ -601,7 +609,7 @@ app.get(
 		const auth = bearerAuth({ token: c.env.UPLOAD_TOKEN });
 		return auth(c, next);
 	},
-	(c) => c.json({ ok: true })
+	(c) => c.json({ ok: true, version: WORKER_VERSION })
 );
 
 // Upload (token-protected)

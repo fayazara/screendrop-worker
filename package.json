@@ -1,5 +1,6 @@
 {
 	"name": "screendrop-worker",
+	"version": "1.0.0",
 	"description": "Screendrop Cloud — screenshot sharing powered by Cloudflare Workers, R2, and D1",
 	"dependencies": {
 		"hono": "4.11.1"
