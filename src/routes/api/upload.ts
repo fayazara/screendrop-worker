@@ -46,6 +46,12 @@ export const Route = createFileRoute("/api/upload")({
             customMetadata: { originalName: file.name },
           })
 
+          const rawTitle = formData.get("title")
+          const title =
+            typeof rawTitle === "string"
+              ? rawTitle.trim().slice(0, 200) || null
+              : null
+
           await db.insert(uploads).values({
             id,
             filename: file.name,
@@ -56,6 +62,7 @@ export const Route = createFileRoute("/api/upload")({
             r2Key,
             mediaType,
             duration: parseOptionalNumber(formData.get("duration")),
+            title,
           })
 
           const origin = new URL(request.url).origin
@@ -97,6 +104,11 @@ export const Route = createFileRoute("/api/upload")({
             request.headers.get("content-length"),
           )
 
+          const rawTitle = request.headers.get("x-title")
+          const title = rawTitle
+            ? decodeURIComponent(rawTitle).trim().slice(0, 200) || null
+            : null
+
           await db.insert(uploads).values({
             id,
             filename,
@@ -107,6 +119,7 @@ export const Route = createFileRoute("/api/upload")({
             r2Key,
             mediaType,
             duration: parseOptionalNumber(request.headers.get("x-duration")),
+            title,
           })
 
           const origin = new URL(request.url).origin

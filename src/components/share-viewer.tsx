@@ -33,32 +33,19 @@ function formatTimeAgo(dateString: string): string {
   return date.toLocaleDateString()
 }
 
-function formatDuration(seconds: number): string {
-  const hours = Math.floor(seconds / 3600)
-  const minutes = Math.floor((seconds % 3600) / 60)
-  const remainingSeconds = Math.floor(seconds % 60)
-  if (hours > 0) {
-    return `${hours}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}`
-  }
-  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`
-}
-
 function ViewerHeader({
   upload,
   author,
   mediaSource,
-  isImage,
   showNotice,
 }: ShareViewerProps & {
   mediaSource: string
-  isImage: boolean
   showNotice: (message: string, variant?: "error") => void
 }) {
   const dimensions =
     upload.width && upload.height
       ? `${upload.width} × ${upload.height}`
       : null
-  const duration = upload.duration ? formatDuration(upload.duration) : null
 
   async function copyLink() {
     try {
@@ -86,7 +73,6 @@ function ViewerHeader({
     <>
       {author.name}
       {dimensions ? ` · ${dimensions}` : ""}
-      {duration ? ` · ${duration}` : ""}
       {` · ${formatBytes(upload.size)} · ${formatTimeAgo(upload.createdAt)}`}
     </>
   )
@@ -102,17 +88,15 @@ function ViewerHeader({
         title="Copy link"
         onClick={copyLink}
       />
-      {isImage ? (
-        <Button
-          variant="ghost"
-          shape="square"
-          size="sm"
-          icon={CopyIcon}
-          aria-label="Copy image"
-          title="Copy image"
-          onClick={copyImage}
-        />
-      ) : null}
+      <Button
+        variant="ghost"
+        shape="square"
+        size="sm"
+        icon={CopyIcon}
+        aria-label="Copy image"
+        title="Copy image"
+        onClick={copyImage}
+      />
       <LinkButton
         href={mediaSource}
         download={upload.filename}
@@ -158,8 +142,7 @@ function ViewerHeader({
 
 export function ShareViewer(props: ShareViewerProps) {
   const { upload, origin } = props
-  const isVideo = upload.mediaType === "video"
-  const mediaSource = `${origin}/api/${isVideo ? "media" : "image"}/${upload.id}`
+  const mediaSource = `${origin}/api/image/${upload.id}`
   const [loadedImageSource, setLoadedImageSource] = useState<string | null>(null)
   const imageRef = useRef<HTMLImageElement | null>(null)
   const toastManager = useKumoToastManager()
@@ -167,10 +150,10 @@ export function ShareViewer(props: ShareViewerProps) {
 
   useEffect(() => {
     const image = imageRef.current
-    if (!isVideo && image?.complete) {
+    if (image?.complete) {
       setLoadedImageSource(mediaSource)
     }
-  }, [isVideo, mediaSource])
+  }, [mediaSource])
 
   function showNotice(message: string, variant?: "error") {
     toastManager.add({ title: message, variant })
@@ -181,63 +164,42 @@ export function ShareViewer(props: ShareViewerProps) {
       <ViewerHeader
         {...props}
         mediaSource={mediaSource}
-        isImage={!isVideo}
         showNotice={showNotice}
       />
 
       <main className="order-2 flex min-h-0 flex-1 flex-col gap-2 px-2 pb-2">
         <div className="flex grow items-center justify-center overflow-auto rounded-2xl bg-white shadow-xs ring-1 ring-neutral-950/5">
-          <div
-            className={`-mt-1 max-h-full w-full rounded-xl border border-neutral-300 p-1 ${isVideo ? "max-w-5xl" : "max-w-7xl bg-neutral-50"}`}
-          >
+          <div className="-mt-1 max-h-full w-full max-w-7xl rounded-xl border border-neutral-300 bg-neutral-50 p-1">
             <div className="overflow-hidden rounded-lg shadow-md ring-1 shadow-black/7 ring-neutral-200">
-              {isVideo ? (
-                <video
-                  src={mediaSource}
-                  controls
-                  playsInline
-                  preload="metadata"
-                  className="w-full rounded-lg bg-black"
+              {!imageLoaded ? (
+                <div
+                  className="w-full rounded-lg"
                   style={{
                     aspectRatio:
                       upload.width && upload.height
                         ? `${upload.width} / ${upload.height}`
                         : "16 / 9",
                   }}
-                />
-              ) : (
-                <>
-                  {!imageLoaded ? (
-                    <div
-                      className="w-full rounded-lg"
-                      style={{
-                        aspectRatio:
-                          upload.width && upload.height
-                            ? `${upload.width} / ${upload.height}`
-                          : "16 / 9",
-                      }}
-                    >
-                      <SkeletonLine
-                        minWidth={100}
-                        maxWidth={100}
-                        minDuration={1.5}
-                        maxDuration={1.5}
-                        minDelay={0}
-                        maxDelay={0}
-                        className="h-full w-full rounded-lg"
-                      />
-                    </div>
-                  ) : null}
-                  <img
-                    ref={imageRef}
-                    src={mediaSource}
-                    alt={upload.filename}
-                    className={`max-h-full w-full rounded-lg bg-white object-contain ${imageLoaded ? "block" : "hidden"}`}
-                    onLoad={() => setLoadedImageSource(mediaSource)}
-                    onError={() => setLoadedImageSource(mediaSource)}
+                >
+                  <SkeletonLine
+                    minWidth={100}
+                    maxWidth={100}
+                    minDuration={1.5}
+                    maxDuration={1.5}
+                    minDelay={0}
+                    maxDelay={0}
+                    className="h-full w-full rounded-lg"
                   />
-                </>
-              )}
+                </div>
+              ) : null}
+              <img
+                ref={imageRef}
+                src={mediaSource}
+                alt={upload.filename}
+                className={`max-h-full w-full rounded-lg bg-white object-contain ${imageLoaded ? "block" : "hidden"}`}
+                onLoad={() => setLoadedImageSource(mediaSource)}
+                onError={() => setLoadedImageSource(mediaSource)}
+              />
             </div>
           </div>
         </div>

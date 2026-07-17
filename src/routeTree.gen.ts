@@ -16,8 +16,13 @@ import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as ApiSetupRouteImport } from './routes/api/setup'
 import { Route as ApiRegisterRouteImport } from './routes/api/register'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
+import { Route as ApiViewIdRouteImport } from './routes/api/view.$id'
+import { Route as ApiPosterIdRouteImport } from './routes/api/poster.$id'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media.$id'
 import { Route as ApiImageIdRouteImport } from './routes/api/image.$id'
+import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
+import { Route as ApiCaptionsIdRouteImport } from './routes/api/captions.$id'
+import { Route as ApiAssetsIdRouteImport } from './routes/api/assets.$id'
 
 const IdRoute = IdRouteImport.update({
   id: '/$id',
@@ -54,6 +59,16 @@ const ApiPingRoute = ApiPingRouteImport.update({
   path: '/api/ping',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiViewIdRoute = ApiViewIdRouteImport.update({
+  id: '/api/view/$id',
+  path: '/api/view/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPosterIdRoute = ApiPosterIdRouteImport.update({
+  id: '/api/poster/$id',
+  path: '/api/poster/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
   id: '/api/media/$id',
   path: '/api/media/$id',
@@ -62,6 +77,21 @@ const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
 const ApiImageIdRoute = ApiImageIdRouteImport.update({
   id: '/api/image/$id',
   path: '/api/image/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCommentsIdRoute = ApiCommentsIdRouteImport.update({
+  id: '/api/comments/$id',
+  path: '/api/comments/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCaptionsIdRoute = ApiCaptionsIdRouteImport.update({
+  id: '/api/captions/$id',
+  path: '/api/captions/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAssetsIdRoute = ApiAssetsIdRouteImport.update({
+  id: '/api/assets/$id',
+  path: '/api/assets/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -73,8 +103,13 @@ export interface FileRoutesByFullPath {
   '/api/setup': typeof ApiSetupRoute
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/captions/$id': typeof ApiCaptionsIdRoute
+  '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/poster/$id': typeof ApiPosterIdRoute
+  '/api/view/$id': typeof ApiViewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -84,8 +119,13 @@ export interface FileRoutesByTo {
   '/api/setup': typeof ApiSetupRoute
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/captions/$id': typeof ApiCaptionsIdRoute
+  '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/poster/$id': typeof ApiPosterIdRoute
+  '/api/view/$id': typeof ApiViewIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -96,8 +136,13 @@ export interface FileRoutesById {
   '/api/setup': typeof ApiSetupRoute
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
+  '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/captions/$id': typeof ApiCaptionsIdRoute
+  '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
+  '/api/poster/$id': typeof ApiPosterIdRoute
+  '/api/view/$id': typeof ApiViewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -109,8 +154,13 @@ export interface FileRouteTypes {
     | '/api/setup'
     | '/api/upload'
     | '/api/version'
+    | '/api/assets/$id'
+    | '/api/captions/$id'
+    | '/api/comments/$id'
     | '/api/image/$id'
     | '/api/media/$id'
+    | '/api/poster/$id'
+    | '/api/view/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -120,8 +170,13 @@ export interface FileRouteTypes {
     | '/api/setup'
     | '/api/upload'
     | '/api/version'
+    | '/api/assets/$id'
+    | '/api/captions/$id'
+    | '/api/comments/$id'
     | '/api/image/$id'
     | '/api/media/$id'
+    | '/api/poster/$id'
+    | '/api/view/$id'
   id:
     | '__root__'
     | '/'
@@ -131,8 +186,13 @@ export interface FileRouteTypes {
     | '/api/setup'
     | '/api/upload'
     | '/api/version'
+    | '/api/assets/$id'
+    | '/api/captions/$id'
+    | '/api/comments/$id'
     | '/api/image/$id'
     | '/api/media/$id'
+    | '/api/poster/$id'
+    | '/api/view/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -143,8 +203,13 @@ export interface RootRouteChildren {
   ApiSetupRoute: typeof ApiSetupRoute
   ApiUploadRoute: typeof ApiUploadRoute
   ApiVersionRoute: typeof ApiVersionRoute
+  ApiAssetsIdRoute: typeof ApiAssetsIdRoute
+  ApiCaptionsIdRoute: typeof ApiCaptionsIdRoute
+  ApiCommentsIdRoute: typeof ApiCommentsIdRoute
   ApiImageIdRoute: typeof ApiImageIdRoute
   ApiMediaIdRoute: typeof ApiMediaIdRoute
+  ApiPosterIdRoute: typeof ApiPosterIdRoute
+  ApiViewIdRoute: typeof ApiViewIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -198,6 +263,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/view/$id': {
+      id: '/api/view/$id'
+      path: '/api/view/$id'
+      fullPath: '/api/view/$id'
+      preLoaderRoute: typeof ApiViewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/poster/$id': {
+      id: '/api/poster/$id'
+      path: '/api/poster/$id'
+      fullPath: '/api/poster/$id'
+      preLoaderRoute: typeof ApiPosterIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/media/$id': {
       id: '/api/media/$id'
       path: '/api/media/$id'
@@ -212,6 +291,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiImageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/comments/$id': {
+      id: '/api/comments/$id'
+      path: '/api/comments/$id'
+      fullPath: '/api/comments/$id'
+      preLoaderRoute: typeof ApiCommentsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/captions/$id': {
+      id: '/api/captions/$id'
+      path: '/api/captions/$id'
+      fullPath: '/api/captions/$id'
+      preLoaderRoute: typeof ApiCaptionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/assets/$id': {
+      id: '/api/assets/$id'
+      path: '/api/assets/$id'
+      fullPath: '/api/assets/$id'
+      preLoaderRoute: typeof ApiAssetsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -223,8 +323,13 @@ const rootRouteChildren: RootRouteChildren = {
   ApiSetupRoute: ApiSetupRoute,
   ApiUploadRoute: ApiUploadRoute,
   ApiVersionRoute: ApiVersionRoute,
+  ApiAssetsIdRoute: ApiAssetsIdRoute,
+  ApiCaptionsIdRoute: ApiCaptionsIdRoute,
+  ApiCommentsIdRoute: ApiCommentsIdRoute,
   ApiImageIdRoute: ApiImageIdRoute,
   ApiMediaIdRoute: ApiMediaIdRoute,
+  ApiPosterIdRoute: ApiPosterIdRoute,
+  ApiViewIdRoute: ApiViewIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -2,9 +2,9 @@ import { timingSafeEqual } from "node:crypto"
 
 const CORS_HEADERS = {
   "access-control-allow-origin": "*",
-  "access-control-allow-methods": "GET, POST, PUT, OPTIONS",
+  "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
   "access-control-allow-headers":
-    "Authorization, Content-Type, Content-Length, X-Filename, X-Media-Type, X-Width, X-Height, X-Duration",
+    "Authorization, Content-Type, Content-Length, Range, X-Filename, X-Media-Type, X-Width, X-Height, X-Duration, X-Title",
 } as const
 
 export function withCors(response: Response): Response {

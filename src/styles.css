@@ -13,3 +13,49 @@
     -webkit-font-smoothing: antialiased;
   }
 }
+
+/* ─── Plyr (stock colors) + video player layout, ported from Bloom ─── */
+
+:root {
+  --plyr-video-background: #000000;
+  --plyr-control-radius: 999px;
+  --plyr-font-family: inherit;
+}
+
+.video-player {
+  width: 100%;
+}
+
+.video-player > .plyr {
+  width: 100%;
+}
+
+.video-player,
+.video-player > .plyr,
+.video-player .plyr__video-wrapper,
+.video-player video {
+  border-radius: inherit;
+}
+
+.video-player .plyr video {
+  object-fit: contain;
+}
+
+.video-player--responsive > .plyr,
+.video-player--responsive .plyr__video-wrapper {
+  height: 100%;
+}
+
+.video-player--fill,
+.video-player--fill > .plyr,
+.video-player--fill .plyr__video-wrapper,
+.video-player--fill .plyr video {
+  height: 100%;
+}
+
+/* ── Chapter-aware tooltip ── */
+
+.plyr--has-chapters .plyr__progress .plyr__tooltip {
+  max-width: 240px;
+  white-space: nowrap;
+}
