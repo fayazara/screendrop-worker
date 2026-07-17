@@ -38,26 +38,116 @@ does not auto-update when this upstream repo changes. The Screendrop app checks
 the deployed worker's version (via `/api/version`) and shows a non-blocking
 notice when an update is available.
 
-Updating is a one-time setup, then a quick sync. Any push to your clone's
-default branch triggers a Workers Builds redeploy automatically, and the
-database schema migrates itself, so there are no manual steps after the push.
+Deploy-button clones may not share commit history with this repository. The
+first update therefore needs to connect the two histories while replacing the
+application files with the current upstream version. Later updates are normal
+Git merges.
+
+### First update of a deploy-button clone
+
+Before starting, open the clone's existing `wrangler.json` and save these
+deployment-specific values:
+
+- The Worker `name`
+- The D1 `database_id` and `database_name`
+- The R2 `bucket_name` and `preview_bucket_name`, if present
+
+These values point at your existing Worker, database, and bucket. Do not replace
+them with the blank auto-provisioning bindings from this template.
+
+In a local checkout of your clone:
 
 ```bash
-# In a local checkout of YOUR clone (one time only):
-git remote add upstream https://github.com/fayazara/screendrop-worker.git
+git switch main
+git pull --ff-only
+git switch -c update-from-upstream
 
-# To update:
+# Add the template as an upstream remote. This is needed only once per checkout.
+git remote add upstream https://github.com/fayazara/screendrop-worker.git
 git fetch upstream
-git merge upstream/main      # or: git rebase upstream/main
-git push origin main         # Workers Builds redeploys automatically
+
+# Connect the independent histories, then use the upstream application tree.
+git merge --allow-unrelated-histories --strategy=ours --no-commit upstream/main
+git restore --source=upstream/main --staged --worktree .
+```
+
+The upstream tree uses `wrangler.jsonc`. Update it with the resource values you
+saved above:
+
+```jsonc
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "<YOUR_EXISTING_WORKER_NAME>",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-07-17",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "upload_source_maps": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_id": "<YOUR_EXISTING_DATABASE_ID>",
+      "database_name": "<YOUR_EXISTING_DATABASE_NAME>",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "<YOUR_EXISTING_BUCKET_NAME>",
+      "preview_bucket_name": "<YOUR_EXISTING_PREVIEW_BUCKET_NAME>"
+    }
+  ]
+}
+```
+
+Validate, commit, and deploy the update:
+
+```bash
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run lint
+pnpm run build
+
+git add -A
+git commit -m "Sync with Screendrop Worker upstream"
+git switch main
+git merge --ff-only update-from-upstream
+git push origin main
+```
+
+The merge commit permanently connects the histories. A push to `main` triggers
+Workers Builds and updates the existing Worker because its name and bindings
+were preserved.
+
+### Future updates
+
+After the first update, syncing is much simpler:
+
+```bash
+git switch main
+git pull --ff-only
+git fetch upstream
+git merge upstream/main
+
+# If wrangler.jsonc conflicts, keep your existing Worker and resource values.
+pnpm install --frozen-lockfile
+pnpm run typecheck
+pnpm run build
+git push origin main
 ```
 
 Notes:
 
-- Your secrets (`UPLOAD_TOKEN`, `AUTHOR_NAME`, `AUTHOR_AVATAR`) live in Cloudflare,
-  not in the repo, so syncing never touches them.
-- If you edited the worker code yourself, you may need to resolve merge conflicts.
-- After the redeploy, click **Verify Connection** in the app to confirm.
+- Your secrets (`UPLOAD_TOKEN`, `AUTHOR_NAME`, `AUTHOR_AVATAR`) live in
+  Cloudflare, not in the repository, so syncing does not replace them.
+- Do not run `db:migrate:remote` when updating an existing deployment. After
+  the redeploy, click **Verify Connection** in Screendrop; `/api/setup` safely
+  upgrades the existing schema without deleting uploads.
+- If you maintain custom code in your clone, perform the update on a branch and
+  review the diff before merging it into `main`.
 
 ### Manual setup
 
