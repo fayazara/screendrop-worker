@@ -1,0 +1,19 @@
+README.md
+  s_7f2cb4e3006c91::t_96e601aee73604 41-58,61-65,67-119,121-131,133-139,144-150
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ff5fb8c5c514c3cf01f30acdf05f2d295b5dd232",
+  "prompts": {},
+  "sessions": {
+    "s_7f2cb4e3006c91": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019f715c-d30c-7411-82b1-3465e31354de",
+        "model": "unknown"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
