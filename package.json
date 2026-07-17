@@ -1,39 +1,66 @@
 {
-	"name": "screendrop-worker",
-	"version": "1.0.0",
-	"description": "Screendrop Cloud — screenshot sharing powered by Cloudflare Workers, R2, and D1",
-	"dependencies": {
-		"hono": "4.11.1"
-	},
-	"devDependencies": {
-		"@cloudflare/vite-plugin": "1.15.3",
-		"@types/node": "24.10.1",
-		"typescript": "5.8.3",
-		"vite": "^6.0.0",
-		"wrangler": "4.88.0"
-	},
-	"private": true,
-	"cloudflare": {
-		"bindings": {
-			"UPLOAD_TOKEN": {
-				"description": "Shared secret used to authenticate uploads from the Screendrop app. **Open Screendrop → Settings → Cloud, copy the generated token, and paste it here.** Do not leave this blank."
-			},
-			"AUTHOR_NAME": {
-				"description": "Optional. Display name shown on shared pages (falls back to `Anonymous`)."
-			},
-			"AUTHOR_AVATAR": {
-				"description": "Optional. Avatar URL shown on shared pages, e.g. `https://github.com/your-username.png`."
-			}
-		}
-	},
-	"scripts": {
-		"dev": "vite",
-		"build": "vite build",
-		"preview": "vite build && vite preview",
-		"deploy": "wrangler deploy",
-		"db:migrate:local": "wrangler d1 migrations apply DB --local",
-		"db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-		"cf-typegen": "wrangler types"
-	},
-	"type": "module"
+  "name": "screendrop-worker",
+  "version": "1.0.0",
+  "description": "Screendrop Cloud — screenshot sharing powered by Cloudflare Workers, R2, and D1",
+  "private": true,
+  "type": "module",
+  "cloudflare": {
+    "bindings": {
+      "UPLOAD_TOKEN": {
+        "description": "Shared secret used to authenticate uploads from the Screendrop app. **Open Screendrop → Settings → Cloud, copy the generated token, and paste it here.** Do not leave this blank."
+      },
+      "AUTHOR_NAME": {
+        "description": "Optional. Display name shown on shared pages (falls back to `Anonymous`)."
+      },
+      "AUTHOR_AVATAR": {
+        "description": "Optional. Avatar URL shown on shared pages, e.g. `https://github.com/your-username.png`."
+      }
+    }
+  },
+  "scripts": {
+    "dev": "vite dev --port 3000",
+    "build": "vite build",
+    "preview": "npm run build && vite preview",
+    "deploy": "npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate:local": "wrangler d1 migrations apply DB --local",
+    "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "lint": "eslint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\"",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@cloudflare/kumo": "^2.7.0",
+    "@cloudflare/vite-plugin": "^1.43.1",
+    "@fontsource-variable/inter": "^5.2.8",
+    "@phosphor-icons/react": "^2.1.10",
+    "@tailwindcss/vite": "^4.3.2",
+    "@tanstack/react-devtools": "^0.10.8",
+    "@tanstack/react-router": "^1.170.17",
+    "@tanstack/react-router-devtools": "^1.167.0",
+    "@tanstack/react-router-ssr-query": "^1.167.1",
+    "@tanstack/react-start": "^1.168.27",
+    "@tanstack/router-plugin": "^1.168.19",
+    "drizzle-orm": "^0.45.2",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwindcss": "^4.3.2",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@tanstack/devtools-vite": "^0.8.1",
+    "@tanstack/eslint-config": "^0.4.0",
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "drizzle-kit": "^0.31.10",
+    "eslint": "^10.6.0",
+    "prettier": "^3.9.4",
+    "prettier-plugin-tailwindcss": "^0.8.0",
+    "typescript": "^6.0.3",
+    "vite": "^8.1.4",
+    "wrangler": "^4.107.1"
+  }
 }

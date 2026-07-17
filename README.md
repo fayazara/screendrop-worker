@@ -2,7 +2,7 @@
 
 The cloud backend for [Screendrop](https://github.com/fayazara/screendrop), an open-source native macOS screenshot tool. This worker handles uploading, storing, and sharing screenshots and screen recordings via shareable links.
 
-Built with [Hono](https://hono.dev) on [Cloudflare Workers](https://developers.cloudflare.com/workers/), using [R2](https://developers.cloudflare.com/r2/) for file storage and [D1](https://developers.cloudflare.com/d1/) for metadata.
+Built with [TanStack Start](https://tanstack.com/start/latest) on [Cloudflare Workers](https://developers.cloudflare.com/workers/), with [Kumo](https://kumo-ui.com/) for the UI, [R2](https://developers.cloudflare.com/r2/) for file storage, and [D1](https://developers.cloudflare.com/d1/) for metadata.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fayazara/screendrop-worker)
 
@@ -66,13 +66,13 @@ If you prefer to deploy manually:
 ```bash
 git clone https://github.com/fayazara/screendrop-worker.git
 cd screendrop-worker
-npm install
+pnpm install
 
 # Set your upload token as a secret
 wrangler secret put UPLOAD_TOKEN
 
-# Deploy (auto-provisions R2 + D1, then applies migrations)
-npm run deploy
+# Deploy (auto-provisions R2 + D1; the schema self-provisions at runtime)
+pnpm run deploy
 ```
 
 ## API
@@ -147,20 +147,20 @@ Set via `wrangler secret put`, or prompted automatically during the Deploy to Cl
 ## Development
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
-This starts a local dev server at `http://localhost:5173` with hot reload. Local R2 and D1 resources are created automatically and persist between runs.
+This starts a local dev server at `http://localhost:3000` with hot reload. Local R2 and D1 resources are created automatically and persist between runs.
 
 ### Database migrations
 
 ```bash
 # Apply migrations locally
-npm run db:migrate:local
+pnpm run db:migrate:local
 
 # Apply migrations to production
-npm run db:migrate:remote
+pnpm run db:migrate:remote
 ```
 
 ## License
