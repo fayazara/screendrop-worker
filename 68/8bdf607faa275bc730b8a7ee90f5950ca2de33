@@ -1,0 +1,27 @@
+drizzle/0002_zippy_risque.sql
+  s_4c50d1134e5ce6::t_6a1e7793a386d7 1-2
+drizzle/meta/0002_snapshot.json
+  s_4c50d1134e5ce6::t_9378b344cd1753 1-226
+drizzle/meta/_journal.json
+  s_4c50d1134e5ce6::t_2fadc8891eb734 18-24
+package.json
+  s_4c50d1134e5ce6::t_48f5fa91455199 45
+pnpm-lock.yaml
+  s_4c50d1134e5ce6::t_d93385e0291552 44-46,1439-1500,2027-2055,2101-2103,2147-2149,2182-2185,2545-2550,2562-2567,2635-2637,2708-2709,2771-2773,2784-2786,2816-2818,2966-2968,3011-3013,3245-3248,4307-4348,4956-5003,5039-5040,5075-5076,5103-5123,5467-5470,5477-5482,5531-5534,5584-5586,5661-5662,5667-5668,5726-5727,5846-5847,5910-5911,6117-6118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "688bdf607faa275bc730b8a7ee90f5950ca2de33",
+  "prompts": {},
+  "sessions": {
+    "s_4c50d1134e5ce6": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "5648b66d-2b63-42d8-958a-cb5ed9ec6130",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
