@@ -21,6 +21,10 @@ export const uploads = sqliteTable(
     // R2 keys for sidecar assets uploaded after the media itself.
     posterKey: text("poster_key"),
     transcriptKey: text("transcript_key"),
+    // Scrub-preview sprite sheet plus its JSON grid metadata
+    // ({ tileWidth, tileHeight, columns, interval, count }).
+    storyboardKey: text("storyboard_key"),
+    storyboardMeta: text("storyboard_meta"),
     // Optional JSON array of { title, start } chapter markers.
     chapters: text("chapters"),
     views: integer("views").notNull().default(0),

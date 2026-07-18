@@ -89,6 +89,8 @@ export async function ensureSchema(): Promise<Array<string>> {
     ["title", "TEXT"],
     ["poster_key", "TEXT"],
     ["transcript_key", "TEXT"],
+    ["storyboard_key", "TEXT"],
+    ["storyboard_meta", "TEXT"],
     ["chapters", "TEXT"],
     ["views", "INTEGER NOT NULL DEFAULT 0"],
   ]

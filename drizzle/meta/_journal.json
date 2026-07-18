@@ -15,6 +15,13 @@
       "when": 1784320138182,
       "tag": "0001_sharp_maverick",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784355801380,
+      "tag": "0002_zippy_risque",
+      "breakpoints": true
     }
   ]
 }

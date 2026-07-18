@@ -4,11 +4,13 @@ import { eq } from "drizzle-orm"
 import { db } from "@/db"
 import { uploads } from "@/db/schema"
 import { json, optionsResponse, protectedApi } from "@/lib/api.server"
+import { parseStoryboardMeta } from "@/lib/storyboard"
 import { parseTranscript } from "@/lib/transcript"
 import { ensureSchema, getUploadById } from "@/lib/uploads.server"
 
 const MAX_POSTER_BYTES = 5 * 1024 * 1024
 const MAX_TRANSCRIPT_BYTES = 2 * 1024 * 1024
+const MAX_STORYBOARD_BYTES = 12 * 1024 * 1024
 const MAX_TITLE_LENGTH = 200
 
 /**
@@ -71,6 +73,36 @@ export const Route = createFileRoute("/api/assets/$id")({
             })
             updates.transcriptKey = transcriptKey
             stored.push("transcript")
+          }
+
+          // A storyboard is only useful with its grid metadata, so the
+          // sprite and meta are accepted as a pair.
+          const storyboard = formData.get("storyboard")
+          const storyboardMetaRaw = formData.get("storyboard_meta")
+          if (storyboard instanceof File && storyboard.size > 0) {
+            if (storyboard.size > MAX_STORYBOARD_BYTES) {
+              return json({ error: "Storyboard too large" }, 413)
+            }
+            if (typeof storyboardMetaRaw !== "string") {
+              return json({ error: "storyboard_meta is required" }, 400)
+            }
+            let parsedMeta: unknown
+            try {
+              parsedMeta = JSON.parse(storyboardMetaRaw)
+            } catch {
+              return json({ error: "storyboard_meta is not valid JSON" }, 400)
+            }
+            const meta = parseStoryboardMeta(parsedMeta)
+            if (!meta) {
+              return json({ error: "storyboard_meta is incomplete" }, 400)
+            }
+            const storyboardKey = `uploads/${upload.id}/storyboard.jpg`
+            await env.BUCKET.put(storyboardKey, storyboard.stream(), {
+              httpMetadata: { contentType: storyboard.type || "image/jpeg" },
+            })
+            updates.storyboardKey = storyboardKey
+            updates.storyboardMeta = JSON.stringify(meta)
+            stored.push("storyboard")
           }
 
           const title = formData.get("title")

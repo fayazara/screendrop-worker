@@ -58,6 +58,9 @@ export function VideoShare({
   const subtitlesUrl = upload.transcriptKey
     ? `${origin}/api/captions/${upload.id}`
     : undefined;
+  const thumbnailsUrl = upload.storyboardKey
+    ? `${origin}/api/storyboard-vtt/${upload.id}`
+    : undefined;
   const hasTranscript = transcript !== null;
 
   const chapters = useMemo<Array<Chapter> | undefined>(() => {
@@ -178,8 +181,8 @@ export function VideoShare({
             poster={posterSource}
             layout="fill"
             initialTime={currentTime}
-            chapters={chapters}
             subtitlesUrl={subtitlesUrl}
+            thumbnailsUrl={thumbnailsUrl}
             onActivate={handlePlayerActivate}
             onTimeUpdate={handlePlayerTimeUpdate}
             className="block h-full w-full"
@@ -199,8 +202,8 @@ export function VideoShare({
                 src={mediaSource}
                 poster={posterSource}
                 initialTime={currentTime}
-                chapters={chapters}
                 subtitlesUrl={subtitlesUrl}
+                thumbnailsUrl={thumbnailsUrl}
                 onActivate={handlePlayerActivate}
                 onTimeUpdate={handlePlayerTimeUpdate}
                 className="block w-full"
@@ -244,8 +247,8 @@ export function VideoShare({
                   src={mediaSource}
                   poster={posterSource}
                   initialTime={currentTime}
-                  chapters={chapters}
                   subtitlesUrl={subtitlesUrl}
+                  thumbnailsUrl={thumbnailsUrl}
                   onActivate={handlePlayerActivate}
                   onTimeUpdate={handlePlayerTimeUpdate}
                   className="block h-full w-full"
