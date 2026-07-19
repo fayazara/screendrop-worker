@@ -1,0 +1,19 @@
+src/components/transcript-panel.tsx
+  s_9df51540acda5e::t_3b6890d8982690 67-69,76-83,152-164,286-297,299-305,308-333
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9450c002eebd1a0f1e10efe140394aaedfb34f6d",
+  "prompts": {},
+  "sessions": {
+    "s_9df51540acda5e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ce56b6a-d13e-471b-bc40-cdc44fa16290",
+        "model": "unknown"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
