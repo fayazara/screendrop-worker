@@ -1,18 +1,25 @@
-import { Tabs } from "@cloudflare/kumo/components/tabs";
-import { useKumoToastManager } from "@cloudflare/kumo";
+import {
+  DropdownMenu,
+  Tooltip,
+  TooltipProvider,
+  useKumoToastManager,
+} from "@cloudflare/kumo";
 import { Button, LinkButton } from "@cloudflare/kumo/components/button";
 import {
   ArrowsInSimpleIcon,
   ArrowsOutSimpleIcon,
+  ChatTextIcon,
   DownloadSimpleIcon,
   EyeIcon,
   ShareNetworkIcon,
+  TextboxIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Upload } from "@/db/schema";
 import type { Author } from "@/lib/uploads.server";
 import type { Transcript } from "@/lib/transcript";
 import type { Chapter } from "@/components/video-player";
+import type { AuthUser } from "@/lib/use-auth";
 import { CommentsPanel } from "@/components/comments-panel";
 import { TranscriptPanel } from "@/components/transcript-panel";
 import { VideoPlayer, getChapterAtTime } from "@/components/video-player";
@@ -22,6 +29,8 @@ import {
   formatTimeAgo,
   formatViews,
 } from "@/lib/format";
+import { parseStoryboardMeta } from "@/lib/storyboard";
+import { useAuth } from "@/lib/use-auth";
 import { hasViewedShare, markShareViewed } from "@/lib/viewer-identity";
 
 interface VideoShareProps {
@@ -48,6 +57,7 @@ export function VideoShare({
   const [views, setViews] = useState(upload.views);
   const activeVideoRef = useRef<HTMLVideoElement | null>(null);
   const toastManager = useKumoToastManager();
+  const { auth, signOut } = useAuth();
 
   const toggleTheater = () => setIsTheaterMode((v) => !v);
 
@@ -62,6 +72,19 @@ export function VideoShare({
     ? `${origin}/api/storyboard-vtt/${upload.id}`
     : undefined;
   const hasTranscript = transcript !== null;
+
+  // Sprite sheet + grid for the transcript's hover frame previews.
+  const storyboard = useMemo(() => {
+    if (!upload.storyboardKey || !upload.storyboardMeta) return null;
+    try {
+      const meta = parseStoryboardMeta(JSON.parse(upload.storyboardMeta));
+      return meta
+        ? { url: `${origin}/api/storyboard/${upload.id}`, meta }
+        : null;
+    } catch {
+      return null;
+    }
+  }, [upload.storyboardKey, upload.storyboardMeta, upload.id, origin]);
 
   const chapters = useMemo<Array<Chapter> | undefined>(() => {
     if (!upload.chapters) return undefined;
@@ -121,17 +144,34 @@ export function VideoShare({
   }, [upload.id]);
 
   const sidebarTabs = (
-    <div className="mb-3">
-      <Tabs
-        variant="segmented"
-        tabs={[
-          { value: "transcript", label: "Transcript" },
-          { value: "comments", label: "Comments" },
-        ]}
-        value={activeTab}
-        onValueChange={setActiveTab}
-      />
-    </div>
+    <TooltipProvider>
+      <div className="flex shrink-0 items-center gap-1 px-2 pb-2">
+        <Tooltip
+          content="Transcript"
+          render={
+            <Button
+              variant={activeTab === "transcript" ? "secondary" : "ghost"}
+              shape="square"
+              icon={TextboxIcon}
+              aria-label="Transcript"
+              onClick={() => setActiveTab("transcript")}
+            />
+          }
+        />
+        <Tooltip
+          content="Comments"
+          render={
+            <Button
+              variant={activeTab === "comments" ? "secondary" : "ghost"}
+              shape="square"
+              icon={ChatTextIcon}
+              aria-label="Comments"
+              onClick={() => setActiveTab("comments")}
+            />
+          }
+        />
+      </div>
+    </TooltipProvider>
   );
 
   const sidebarContent =
@@ -140,6 +180,7 @@ export function VideoShare({
         transcript={transcript}
         currentTime={currentTime}
         onSeek={handleSeek}
+        storyboard={storyboard}
         className="h-full"
       />
     ) : (
@@ -147,6 +188,7 @@ export function VideoShare({
         uploadId={upload.id}
         currentTime={currentTime}
         onSeek={handleSeek}
+        auth={auth}
         className="h-full"
       />
     );
@@ -167,7 +209,7 @@ export function VideoShare({
 
   return (
     <div className="flex min-h-screen flex-col bg-neutral-50">
-      <Header />
+      <Header user={auth?.user ?? null} onSignOut={() => void signOut()} />
 
       {/* Full-width video in theater mode — hidden on mobile */}
       {isTheaterMode && (
@@ -220,6 +262,7 @@ export function VideoShare({
                   transcript={transcript}
                   currentTime={currentTime}
                   onSeek={handleSeek}
+                  storyboard={storyboard}
                   style={{ maxHeight: "400px" }}
                 />
               </div>
@@ -229,6 +272,7 @@ export function VideoShare({
                 uploadId={upload.id}
                 currentTime={currentTime}
                 onSeek={handleSeek}
+                auth={auth}
               />
             </div>
           </div>
@@ -279,7 +323,9 @@ export function VideoShare({
             {/* Mobile-only: Sidebar below content */}
             <div className="mt-4 px-4 lg:hidden">
               {hasTranscript && sidebarTabs}
-              <div style={{ maxHeight: "400px" }}>{sidebarContent}</div>
+              <div className="flex flex-col" style={{ maxHeight: "400px" }}>
+                {sidebarContent}
+              </div>
             </div>
           </div>
         )}
@@ -404,13 +450,47 @@ function CurrentChapterIndicator({ chapter }: { chapter: Chapter }) {
   );
 }
 
-function Header() {
+function Header({
+  user,
+  onSignOut,
+}: {
+  user: AuthUser | null;
+  onSignOut: () => void;
+}) {
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center border-b border-neutral-200 bg-white px-4">
+    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4">
       <a href="/" className="flex items-center gap-2">
         <img src="/favicon.ico" alt="" className="size-6" />
         <span className="font-semibold text-neutral-900">Screendrop</span>
       </a>
+      {user && (
+        <DropdownMenu>
+          <DropdownMenu.Trigger
+            render={
+              <button
+                className="cursor-pointer rounded-full transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-neutral-900/20 focus-visible:outline-none"
+                aria-label={`Signed in as ${user.name}`}
+              >
+                <img
+                  src={
+                    user.avatar ||
+                    `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.name)}`
+                  }
+                  alt={user.name}
+                  className="size-7 rounded-full"
+                />
+              </button>
+            }
+          />
+          <DropdownMenu.Content>
+            <div className="px-3 py-1.5 text-xs text-neutral-500">
+              Signed in as{" "}
+              <span className="font-medium text-neutral-800">{user.name}</span>
+            </div>
+            <DropdownMenu.Item onClick={onSignOut}>Sign out</DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu>
+      )}
     </header>
   );
 }

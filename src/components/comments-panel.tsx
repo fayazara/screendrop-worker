@@ -6,12 +6,12 @@ import {
   GoogleLogoIcon,
   PaperPlaneRightIcon,
   PencilSimpleIcon,
-  SignOutIcon,
   TrashIcon,
   XIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Comment } from "@/db/schema";
+import type { AuthProvider, AuthState } from "@/lib/use-auth";
 import { formatDuration, formatTimeAgo } from "@/lib/format";
 import {
   getViewerId,
@@ -41,14 +41,6 @@ function Avatar({
   );
 }
 
-type AuthProvider = "github" | "google";
-
-interface AuthState {
-  authEnabled: boolean;
-  providers: Array<AuthProvider>;
-  user: { id: string; name: string; avatar: string } | null;
-}
-
 const PROVIDER_LABELS: Record<
   AuthProvider,
   { label: string; icon: typeof GithubLogoIcon }
@@ -61,19 +53,23 @@ interface CommentsPanelProps {
   uploadId: string;
   currentTime: number;
   onSeek: (time: number) => void;
+  /** Shared auth state from useAuth; null while it loads. */
+  auth: AuthState | null;
   className?: string;
   style?: React.CSSProperties;
 }
 
 /**
- * The comments panel, ported from Bloom: anonymous viewer identity in
- * localStorage, timestamped comments that seek the player, and inline
- * edit/delete for the viewer's own comments.
+ * The comments panel, ported from Bloom: timestamped comments that seek
+ * the player and inline edit/delete for the viewer's own comments.
+ * Identity is either the OAuth session (when the deployment configures
+ * it) or an anonymous localStorage viewer id.
  */
 export function CommentsPanel({
   uploadId,
   currentTime,
   onSeek,
+  auth,
   className,
   style,
 }: CommentsPanelProps) {
@@ -87,9 +83,6 @@ export function CommentsPanel({
   const [editText, setEditText] = useState("");
   const [showNamePrompt, setShowNamePrompt] = useState(false);
   const [viewerId, setViewerId] = useState("");
-  // null until /api/auth/me answers; anonymous UI stays hidden until then
-  // so a sign-in-required deployment never flashes the name prompt.
-  const [auth, setAuth] = useState<AuthState | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const editInputRef = useRef<HTMLInputElement>(null);
 
@@ -99,34 +92,8 @@ export function CommentsPanel({
     setName(getViewerName());
   }, []);
 
-  // Whether this deployment requires sign-in, and who is signed in.
-  useEffect(() => {
-    void (async () => {
-      try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data: AuthState = JSON.parse(await res.text());
-          setAuth(data);
-          return;
-        }
-      } catch {
-        // fall through to anonymous mode
-      }
-      setAuth({ authEnabled: false, providers: [], user: null });
-    })();
-  }, []);
-
   const authEnabled = auth?.authEnabled ?? false;
   const user = auth?.user ?? null;
-
-  const handleSignOut = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setAuth((prev) => (prev ? { ...prev, user: null } : prev));
-    } catch {
-      // silently fail
-    }
-  };
 
   // Fetch comments
   const fetchComments = useCallback(async () => {
@@ -253,22 +220,12 @@ export function CommentsPanel({
 
   return (
     <div
-      className={`flex flex-col overflow-hidden rounded-2xl border border-neutral-200 bg-white ${className ?? ""}`}
+      className={`flex flex-col overflow-hidden ${className ?? ""}`}
       style={style}
     >
-      {/* Header */}
-      <div className="shrink-0 border-b border-neutral-200 px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-sm font-medium text-neutral-500">Comments</h2>
-            <span className="text-xs text-neutral-400">{comments.length}</span>
-          </div>
-        </div>
-      </div>
-
       {/* Name prompt overlay */}
       {showNamePrompt && (
-        <div className="shrink-0 border-b border-neutral-200 bg-neutral-50 px-4 py-3">
+        <div className="shrink-0 rounded-xl bg-neutral-50 px-4 py-3">
           <p className="mb-2 text-xs text-neutral-600">What's your name?</p>
           <div className="flex gap-2">
             <input
@@ -411,7 +368,7 @@ export function CommentsPanel({
 
       {/* Comment input */}
       {auth !== null && authEnabled && !user ? (
-        <div className="shrink-0 border-t border-neutral-200 px-4 py-4">
+        <div className="shrink-0 border-t border-neutral-100 px-4 py-4">
           <p className="mb-3 text-center text-xs text-neutral-500">
             Sign in to comment
           </p>
@@ -434,25 +391,7 @@ export function CommentsPanel({
           </div>
         </div>
       ) : auth !== null ? (
-        <div className="shrink-0 border-t border-neutral-200 px-4 py-3">
-          {/* Signed-in identity row */}
-          {authEnabled && user && (
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-xs text-neutral-400">Commenting as</span>
-              <span className="text-xs font-medium text-neutral-700">
-                {user.name}
-              </span>
-              <button
-                onClick={() => void handleSignOut()}
-                className="ml-auto inline-flex cursor-pointer items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-neutral-600"
-                title="Sign out"
-              >
-                <SignOutIcon size={12} />
-                Sign out
-              </button>
-            </div>
-          )}
-
+        <div className="shrink-0 border-t border-neutral-100 px-4 py-3">
           {/* Name display / edit row (anonymous mode) */}
           {!authEnabled && name && (
             <div className="mb-2 flex items-center gap-2">
