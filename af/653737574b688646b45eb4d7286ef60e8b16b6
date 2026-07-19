@@ -1,0 +1,19 @@
+src/styles.css
+  s_9df51540acda5e::t_9f0b8ab0dc9bb6 36-84
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "af653737574b688646b45eb4d7286ef60e8b16b6",
+  "prompts": {},
+  "sessions": {
+    "s_9df51540acda5e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ce56b6a-d13e-471b-bc40-cdc44fa16290",
+        "model": "unknown"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
