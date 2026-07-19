@@ -1,0 +1,39 @@
+README.md
+  s_9df51540acda5e::t_1f7d7cd0a494f0 197-203,270-295
+drizzle/0003_smiling_baron_strucker.sql
+  s_9df51540acda5e::t_c4b7f3afe0161e 1
+drizzle/meta/0003_snapshot.json
+  s_9df51540acda5e::t_f71e82c074dcb7 1-233
+drizzle/meta/_journal.json
+  s_9df51540acda5e::t_89608684ce3159 25-31
+src/routes/api/auth/callback.$provider.ts
+  s_9df51540acda5e::t_77ee961c35c710 1-21
+src/routes/api/auth/login.ts
+  s_9df51540acda5e::t_c179b2bd630bc9 1-28
+src/routes/api/auth/logout.ts
+  s_9df51540acda5e::t_89f79b6d2b8ab3 1-14
+src/routes/api/auth/me.ts
+  s_9df51540acda5e::t_f6dd6b00456b3a 1-30
+src/db/schema.ts
+  s_9df51540acda5e::t_d2223f7e2673f6 40-43,46-47
+src/lib/uploads.server.ts
+  s_9df51540acda5e::t_b9decf0601dcb6 105,111-118
+src/routeTree.gen.ts
+  s_9df51540acda5e::t_765f26f77c4912 27-29,31,108-122,128-132,143-145,154,165-167,176,188-190,199,212-214,223,234-236,245,256-258,267,279-281,290,400-420,428-434,447-449,458
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "bcb704043f6ccf4b5420a55b6ef0454971214450",
+  "prompts": {},
+  "sessions": {
+    "s_9df51540acda5e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9ce56b6a-d13e-471b-bc40-cdc44fa16290",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
