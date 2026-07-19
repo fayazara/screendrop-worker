@@ -57,11 +57,13 @@ export function TranscriptPanel({
   const segments = transcript.cues;
   const [searchQuery, setSearchQuery] = useState("");
   const [autoScroll, setAutoScroll] = useState(true);
-  // Frame preview following the hovered timestamp: the popover is one
-  // element whose `top` transitions, so it glides between rows.
+  // Frame preview following the hovered timestamp: one element whose
+  // `top` transitions, so it glides between rows. It stays mounted with
+  // `previewOpen` false while closing so the exit animation can play.
   const [preview, setPreview] = useState<{ time: number; top: number } | null>(
     null,
   );
+  const [previewOpen, setPreviewOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeSegmentRef = useRef<HTMLDivElement>(null);
@@ -76,6 +78,11 @@ export function TranscriptPanel({
       setPreview({
         time,
         top: rowRect.top - rootRect.top + rowRect.height / 2,
+      });
+      // Double rAF: a freshly mounted popover paints in its closed state
+      // first, so the open transition actually plays on entry.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setPreviewOpen(true));
       });
     },
     [storyboard],
@@ -174,19 +181,46 @@ export function TranscriptPanel({
       {storyboard && preview && (
         <div
           className="pointer-events-none absolute z-10 hidden -translate-y-1/2 transition-[top] duration-200 ease-out lg:block"
-          style={{ top: preview.top, right: "calc(100% + 12px)" }}
+          style={{ top: preview.top, right: "calc(100% + 14px)" }}
         >
-          <div className="overflow-hidden rounded-xl border border-neutral-200 bg-white shadow-lg">
-            <div
-              style={storyboardTileStyle(
-                storyboard.url,
-                storyboard.meta,
-                preview.time,
-              )}
-            />
-            <p className="py-1 text-center text-xs font-medium text-neutral-600 tabular-nums">
-              {formatDuration(preview.time)}
-            </p>
+          <div
+            className={`transcript-preview relative ${previewOpen ? "is-open" : ""}`}
+          >
+            <div className="transcript-preview-card rounded-2xl bg-white p-1.5">
+              <div
+                className="rounded-lg"
+                style={storyboardTileStyle(
+                  storyboard.url,
+                  storyboard.meta,
+                  preview.time,
+                )}
+              />
+            </div>
+            {/* Rounded notch, NSPopover-style: overlaps the card 2px,
+                with the border stroked only along the outer curve. The
+                card's ring renders 1px outside its edge (box-shadow
+                spread), so the flanks base at x=2.5 — the stroke sits
+                exactly on the ring line and the outline reads as one
+                continuous shape. */}
+            <svg
+              className="absolute top-1/2 left-full -translate-y-1/2"
+              style={{ marginLeft: -2 }}
+              width="12"
+              height="28"
+              viewBox="0 0 12 28"
+              aria-hidden="true"
+            >
+              <path
+                d="M2.5 0 C2.5 4 5 7 9.5 11.5 C11.2 13.2 11.2 14.8 9.5 16.5 C5 21 2.5 24 2.5 28 L0 28 L0 0 Z"
+                fill="#fff"
+              />
+              <path
+                d="M2.5 0 C2.5 4 5 7 9.5 11.5 C11.2 13.2 11.2 14.8 9.5 16.5 C5 21 2.5 24 2.5 28"
+                fill="none"
+                stroke="var(--card-border)"
+                strokeWidth="1"
+              />
+            </svg>
           </div>
         </div>
       )}
@@ -229,7 +263,7 @@ export function TranscriptPanel({
       <div
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        onMouseLeave={() => setPreview(null)}
+        onMouseLeave={() => setPreviewOpen(false)}
         className="flex-1 space-y-1 overflow-y-auto px-2 pb-2"
       >
         {filteredSegments.map((segment, index) => {

@@ -33,3 +33,52 @@
 .media-default-skin {
   border-radius: 0 !important;
 }
+
+/* ─── Transcript frame-preview popover ───
+   Springy-but-snappy open/close: fade + cross-blur + slight scale,
+   sliding out from the anchor side. Open uses the slower clock, the
+   resting (closed) transition the faster one, so toggling one class
+   gives the open/close asymmetry. Shadow lives in drop-shadow() so it
+   wraps the notch silhouette, not the card's box. */
+
+.transcript-preview {
+  --tp-open: 320ms;
+  --tp-close: 200ms;
+  --tp-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --card-border: rgb(0 0 0 / 0.07);
+  opacity: 0;
+  transform: translateX(10px) scale(0.96);
+  transform-origin: right center;
+  filter: blur(2px);
+  will-change: transform, opacity, filter;
+  transition:
+    opacity var(--tp-close) var(--tp-ease),
+    transform var(--tp-close) var(--tp-ease),
+    filter var(--tp-close) var(--tp-ease);
+}
+
+.transcript-preview.is-open {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+  filter: blur(0);
+  transition:
+    opacity var(--tp-open) var(--tp-ease),
+    transform var(--tp-open) var(--tp-ease),
+    filter var(--tp-open) var(--tp-ease);
+}
+
+/* Thin ring drawn outside the card edge (continued around the notch by
+   its SVG stroke) plus a soft, low-opacity shadow that keeps the white
+   card white. */
+.transcript-preview-card {
+  box-shadow:
+    0 0 0 1px var(--card-border),
+    0 12px 28px rgb(0 0 0 / 0.09),
+    0 2px 6px rgb(0 0 0 / 0.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transcript-preview {
+    transition: none !important;
+  }
+}
