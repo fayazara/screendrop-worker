@@ -24,7 +24,11 @@ import { Route as ApiMediaIdRouteImport } from './routes/api/media.$id'
 import { Route as ApiImageIdRouteImport } from './routes/api/image.$id'
 import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
 import { Route as ApiCaptionsIdRouteImport } from './routes/api/captions.$id'
+import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
+import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
+import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAssetsIdRouteImport } from './routes/api/assets.$id'
+import { Route as ApiAuthCallbackProviderRouteImport } from './routes/api/auth/callback.$provider'
 
 const IdRoute = IdRouteImport.update({
   id: '/$id',
@@ -101,9 +105,29 @@ const ApiCaptionsIdRoute = ApiCaptionsIdRouteImport.update({
   path: '/api/captions/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAuthMeRoute = ApiAuthMeRouteImport.update({
+  id: '/api/auth/me',
+  path: '/api/auth/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLogoutRoute = ApiAuthLogoutRouteImport.update({
+  id: '/api/auth/logout',
+  path: '/api/auth/logout',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthLoginRoute = ApiAuthLoginRouteImport.update({
+  id: '/api/auth/login',
+  path: '/api/auth/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAssetsIdRoute = ApiAssetsIdRouteImport.update({
   id: '/api/assets/$id',
   path: '/api/assets/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthCallbackProviderRoute = ApiAuthCallbackProviderRouteImport.update({
+  id: '/api/auth/callback/$provider',
+  path: '/api/auth/callback/$provider',
   getParentRoute: () => rootRouteImport,
 } as any)
 
@@ -116,6 +140,9 @@ export interface FileRoutesByFullPath {
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
@@ -124,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/view/$id': typeof ApiViewIdRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -134,6 +162,9 @@ export interface FileRoutesByTo {
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
@@ -142,6 +173,7 @@ export interface FileRoutesByTo {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/view/$id': typeof ApiViewIdRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -153,6 +185,9 @@ export interface FileRoutesById {
   '/api/upload': typeof ApiUploadRoute
   '/api/version': typeof ApiVersionRoute
   '/api/assets/$id': typeof ApiAssetsIdRoute
+  '/api/auth/login': typeof ApiAuthLoginRoute
+  '/api/auth/logout': typeof ApiAuthLogoutRoute
+  '/api/auth/me': typeof ApiAuthMeRoute
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
@@ -161,6 +196,7 @@ export interface FileRoutesById {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/view/$id': typeof ApiViewIdRoute
+  '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -173,6 +209,9 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/api/version'
     | '/api/assets/$id'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
@@ -181,6 +220,7 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/view/$id'
+    | '/api/auth/callback/$provider'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -191,6 +231,9 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/api/version'
     | '/api/assets/$id'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
@@ -199,6 +242,7 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/view/$id'
+    | '/api/auth/callback/$provider'
   id:
     | '__root__'
     | '/'
@@ -209,6 +253,9 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/api/version'
     | '/api/assets/$id'
+    | '/api/auth/login'
+    | '/api/auth/logout'
+    | '/api/auth/me'
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
@@ -217,6 +264,7 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/view/$id'
+    | '/api/auth/callback/$provider'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -228,6 +276,9 @@ export interface RootRouteChildren {
   ApiUploadRoute: typeof ApiUploadRoute
   ApiVersionRoute: typeof ApiVersionRoute
   ApiAssetsIdRoute: typeof ApiAssetsIdRoute
+  ApiAuthLoginRoute: typeof ApiAuthLoginRoute
+  ApiAuthLogoutRoute: typeof ApiAuthLogoutRoute
+  ApiAuthMeRoute: typeof ApiAuthMeRoute
   ApiCaptionsIdRoute: typeof ApiCaptionsIdRoute
   ApiCommentsIdRoute: typeof ApiCommentsIdRoute
   ApiImageIdRoute: typeof ApiImageIdRoute
@@ -236,6 +287,7 @@ export interface RootRouteChildren {
   ApiStoryboardVttIdRoute: typeof ApiStoryboardVttIdRoute
   ApiStoryboardIdRoute: typeof ApiStoryboardIdRoute
   ApiViewIdRoute: typeof ApiViewIdRoute
+  ApiAuthCallbackProviderRoute: typeof ApiAuthCallbackProviderRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -345,11 +397,39 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCaptionsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/auth/me': {
+      id: '/api/auth/me'
+      path: '/api/auth/me'
+      fullPath: '/api/auth/me'
+      preLoaderRoute: typeof ApiAuthMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/logout': {
+      id: '/api/auth/logout'
+      path: '/api/auth/logout'
+      fullPath: '/api/auth/logout'
+      preLoaderRoute: typeof ApiAuthLogoutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/login': {
+      id: '/api/auth/login'
+      path: '/api/auth/login'
+      fullPath: '/api/auth/login'
+      preLoaderRoute: typeof ApiAuthLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/assets/$id': {
       id: '/api/assets/$id'
       path: '/api/assets/$id'
       fullPath: '/api/assets/$id'
       preLoaderRoute: typeof ApiAssetsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/callback/$provider': {
+      id: '/api/auth/callback/$provider'
+      path: '/api/auth/callback/$provider'
+      fullPath: '/api/auth/callback/$provider'
+      preLoaderRoute: typeof ApiAuthCallbackProviderRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -364,6 +444,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiUploadRoute: ApiUploadRoute,
   ApiVersionRoute: ApiVersionRoute,
   ApiAssetsIdRoute: ApiAssetsIdRoute,
+  ApiAuthLoginRoute: ApiAuthLoginRoute,
+  ApiAuthLogoutRoute: ApiAuthLogoutRoute,
+  ApiAuthMeRoute: ApiAuthMeRoute,
   ApiCaptionsIdRoute: ApiCaptionsIdRoute,
   ApiCommentsIdRoute: ApiCommentsIdRoute,
   ApiImageIdRoute: ApiImageIdRoute,
@@ -372,6 +455,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiStoryboardVttIdRoute: ApiStoryboardVttIdRoute,
   ApiStoryboardIdRoute: ApiStoryboardIdRoute,
   ApiViewIdRoute: ApiViewIdRoute,
+  ApiAuthCallbackProviderRoute: ApiAuthCallbackProviderRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

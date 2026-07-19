@@ -102,11 +102,19 @@ export async function ensureSchema(): Promise<Array<string>> {
   }
 
   await env.DB.exec(
-    "CREATE TABLE IF NOT EXISTS comments (id TEXT PRIMARY KEY, upload_id TEXT NOT NULL, viewer_id TEXT NOT NULL, author_name TEXT NOT NULL, text TEXT NOT NULL, timestamp REAL, created_at TEXT NOT NULL DEFAULT (datetime('now')))",
+    "CREATE TABLE IF NOT EXISTS comments (id TEXT PRIMARY KEY, upload_id TEXT NOT NULL, viewer_id TEXT NOT NULL, author_name TEXT NOT NULL, author_avatar TEXT, text TEXT NOT NULL, timestamp REAL, created_at TEXT NOT NULL DEFAULT (datetime('now')))",
   )
   await env.DB.exec(
     "CREATE INDEX IF NOT EXISTS idx_comments_upload_id ON comments(upload_id)",
   )
+
+  const commentColumns = await env.DB.prepare(
+    "PRAGMA table_info(comments)",
+  ).all<{ name: string }>()
+  if (!commentColumns.results.some((row) => row.name === "author_avatar")) {
+    await env.DB.exec("ALTER TABLE comments ADD COLUMN author_avatar TEXT")
+    applied.push("author_avatar")
+  }
 
   return applied
 }

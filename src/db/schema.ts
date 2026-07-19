@@ -37,11 +37,14 @@ export const comments = sqliteTable(
   {
     id: text("id").primaryKey(),
     uploadId: text("upload_id").notNull(),
-    // Anonymous viewer identity minted client-side and kept in
-    // localStorage; lets a viewer edit/delete their own comments
-    // without any auth.
+    // Comment ownership key. Anonymous mode: a random id minted
+    // client-side and kept in localStorage. When OAuth sign-in is
+    // configured: the provider identity from the session cookie
+    // ("github:1234" / "google:5678"), enforced server-side.
     viewerId: text("viewer_id").notNull(),
     authorName: text("author_name").notNull(),
+    // Provider avatar URL when the comment was made signed-in.
+    authorAvatar: text("author_avatar"),
     text: text("text").notNull(),
     // Video time the comment is anchored to, in seconds; null for
     // general comments.

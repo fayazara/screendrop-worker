@@ -4,3 +4,12 @@
 UPLOAD_TOKEN=
 AUTHOR_NAME=Your Name
 AUTHOR_AVATAR=https://github.com/your-username.png
+
+# Optional: OAuth sign-in for comments. Configure either provider (or both)
+# and commenting switches from anonymous to sign-in-required. Callback URLs:
+#   https://<your-worker>/api/auth/callback/github
+#   https://<your-worker>/api/auth/callback/google
+GITHUB_CLIENT_ID=
+GITHUB_CLIENT_SECRET=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=

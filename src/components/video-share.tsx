@@ -124,7 +124,6 @@ export function VideoShare({
     <div className="mb-3">
       <Tabs
         variant="segmented"
-        size="sm"
         tabs={[
           { value: "transcript", label: "Transcript" },
           { value: "comments", label: "Comments" },

@@ -1,38 +1,68 @@
-import { Button } from "@cloudflare/kumo/components/button"
+import { Button } from "@cloudflare/kumo/components/button";
 import {
   CheckIcon,
   ClockIcon,
+  GithubLogoIcon,
+  GoogleLogoIcon,
   PaperPlaneRightIcon,
   PencilSimpleIcon,
+  SignOutIcon,
   TrashIcon,
   XIcon,
-} from "@phosphor-icons/react"
-import { useCallback, useEffect, useRef, useState } from "react"
-import type { Comment } from "@/db/schema"
-import { formatDuration, formatTimeAgo } from "@/lib/format"
+} from "@phosphor-icons/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Comment } from "@/db/schema";
+import { formatDuration, formatTimeAgo } from "@/lib/format";
 import {
   getViewerId,
   getViewerName,
   setViewerName,
-} from "@/lib/viewer-identity"
+} from "@/lib/viewer-identity";
 
-function Avatar({ name, size = 32 }: { name: string; size?: number }) {
+function Avatar({
+  name,
+  src,
+  size = 32,
+}: {
+  name: string;
+  src?: string | null;
+  size?: number;
+}) {
   return (
     <img
-      src={`https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}`}
+      src={
+        src ||
+        `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(name)}`
+      }
       alt={name}
       className="shrink-0 rounded-full"
       style={{ width: size, height: size }}
     />
-  )
+  );
 }
 
+type AuthProvider = "github" | "google";
+
+interface AuthState {
+  authEnabled: boolean;
+  providers: Array<AuthProvider>;
+  user: { id: string; name: string; avatar: string } | null;
+}
+
+const PROVIDER_LABELS: Record<
+  AuthProvider,
+  { label: string; icon: typeof GithubLogoIcon }
+> = {
+  github: { label: "GitHub", icon: GithubLogoIcon },
+  google: { label: "Google", icon: GoogleLogoIcon },
+};
+
 interface CommentsPanelProps {
-  uploadId: string
-  currentTime: number
-  onSeek: (time: number) => void
-  className?: string
-  style?: React.CSSProperties
+  uploadId: string;
+  currentTime: number;
+  onSeek: (time: number) => void;
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
@@ -47,100 +77,132 @@ export function CommentsPanel({
   className,
   style,
 }: CommentsPanelProps) {
-  const [comments, setComments] = useState<Array<Comment>>([])
-  const [loading, setLoading] = useState(true)
-  const [text, setText] = useState("")
-  const [name, setName] = useState("")
-  const [attachTimestamp, setAttachTimestamp] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [editText, setEditText] = useState("")
-  const [showNamePrompt, setShowNamePrompt] = useState(false)
-  const [viewerId, setViewerId] = useState("")
-  const inputRef = useRef<HTMLInputElement>(null)
-  const editInputRef = useRef<HTMLInputElement>(null)
+  const [comments, setComments] = useState<Array<Comment>>([]);
+  const [loading, setLoading] = useState(true);
+  const [text, setText] = useState("");
+  const [name, setName] = useState("");
+  const [attachTimestamp, setAttachTimestamp] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editText, setEditText] = useState("");
+  const [showNamePrompt, setShowNamePrompt] = useState(false);
+  const [viewerId, setViewerId] = useState("");
+  // null until /api/auth/me answers; anonymous UI stays hidden until then
+  // so a sign-in-required deployment never flashes the name prompt.
+  const [auth, setAuth] = useState<AuthState | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const editInputRef = useRef<HTMLInputElement>(null);
 
   // localStorage only exists client-side; resolve identity after mount.
   useEffect(() => {
-    setViewerId(getViewerId())
-    setName(getViewerName())
-  }, [])
+    setViewerId(getViewerId());
+    setName(getViewerName());
+  }, []);
+
+  // Whether this deployment requires sign-in, and who is signed in.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (res.ok) {
+          const data: AuthState = JSON.parse(await res.text());
+          setAuth(data);
+          return;
+        }
+      } catch {
+        // fall through to anonymous mode
+      }
+      setAuth({ authEnabled: false, providers: [], user: null });
+    })();
+  }, []);
+
+  const authEnabled = auth?.authEnabled ?? false;
+  const user = auth?.user ?? null;
+
+  const handleSignOut = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+      setAuth((prev) => (prev ? { ...prev, user: null } : prev));
+    } catch {
+      // silently fail
+    }
+  };
 
   // Fetch comments
   const fetchComments = useCallback(async () => {
     try {
-      const res = await fetch(`/api/comments/${uploadId}`)
+      const res = await fetch(`/api/comments/${uploadId}`);
       if (res.ok) {
-        const data: { comments: Array<Comment> } = JSON.parse(await res.text())
-        setComments(data.comments)
+        const data: { comments: Array<Comment> } = JSON.parse(await res.text());
+        setComments(data.comments);
       }
     } catch {
       // silently fail
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [uploadId])
+  }, [uploadId]);
 
   useEffect(() => {
-    void fetchComments()
-  }, [fetchComments])
+    void fetchComments();
+  }, [fetchComments]);
 
   // Focus edit input when editing starts
   useEffect(() => {
     if (editingId && editInputRef.current) {
-      editInputRef.current.focus()
+      editInputRef.current.focus();
     }
-  }, [editingId])
+  }, [editingId]);
 
   // Submit a new comment
   const handleSubmit = async () => {
-    const trimmed = text.trim()
-    if (!trimmed || submitting) return
+    const trimmed = text.trim();
+    if (!trimmed || submitting) return;
 
-    // If no name set yet, show prompt
-    if (!name.trim()) {
-      setShowNamePrompt(true)
-      return
+    // Anonymous mode needs a display name; signed-in identity comes
+    // from the session cookie server-side.
+    if (!authEnabled && !name.trim()) {
+      setShowNamePrompt(true);
+      return;
     }
 
-    setSubmitting(true)
+    setSubmitting(true);
     try {
       const res = await fetch(`/api/comments/${uploadId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          viewerId,
-          authorName: name.trim(),
           text: trimmed,
           timestamp: attachTimestamp ? currentTime : null,
+          ...(authEnabled ? {} : { viewerId, authorName: name.trim() }),
         }),
-      })
+      });
 
       if (res.ok) {
-        const data: { comment: Comment } = JSON.parse(await res.text())
-        setComments((prev) => [...prev, data.comment])
-        setText("")
-        setAttachTimestamp(false)
+        const data: { comment: Comment } = JSON.parse(await res.text());
+        setComments((prev) => [...prev, data.comment]);
+        setText("");
+        setAttachTimestamp(false);
       }
     } catch {
       // silently fail
     } finally {
-      setSubmitting(false)
+      setSubmitting(false);
     }
-  }
+  };
 
   // Submit after name is set from prompt
   const handleNameSubmit = () => {
-    if (!name.trim()) return
-    setViewerName(name.trim())
-    setShowNamePrompt(false)
-    void handleSubmit()
-  }
+    if (!name.trim()) return;
+    setViewerName(name.trim());
+    setShowNamePrompt(false);
+    void handleSubmit();
+  };
 
   // Edit a comment
   const handleEdit = async (commentId: string) => {
-    const trimmed = editText.trim()
-    if (!trimmed) return
+    const trimmed = editText.trim();
+    if (!trimmed) return;
 
     try {
       const res = await fetch(`/api/comments/${uploadId}`, {
@@ -151,20 +213,20 @@ export function CommentsPanel({
           viewerId,
           text: trimmed,
         }),
-      })
+      });
 
       if (res.ok) {
-        const data: { comment: Comment } = JSON.parse(await res.text())
+        const data: { comment: Comment } = JSON.parse(await res.text());
         setComments((prev) =>
           prev.map((c) => (c.id === commentId ? data.comment : c)),
-        )
-        setEditingId(null)
-        setEditText("")
+        );
+        setEditingId(null);
+        setEditText("");
       }
     } catch {
       // silently fail
     }
-  }
+  };
 
   // Delete a comment
   const handleDelete = async (commentId: string) => {
@@ -173,21 +235,21 @@ export function CommentsPanel({
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ commentId, viewerId }),
-      })
+      });
 
       if (res.ok) {
-        setComments((prev) => prev.filter((c) => c.id !== commentId))
+        setComments((prev) => prev.filter((c) => c.id !== commentId));
       }
     } catch {
       // silently fail
     }
-  }
+  };
 
   // Handle name change
   const handleNameChange = (newName: string) => {
-    setName(newName)
-    setViewerName(newName)
-  }
+    setName(newName);
+    setViewerName(newName);
+  };
 
   return (
     <div
@@ -249,12 +311,18 @@ export function CommentsPanel({
           </div>
         ) : (
           comments.map((item) => {
-            const isOwn = item.viewerId === viewerId
-            const isEditing = editingId === item.id
+            const isOwn = authEnabled
+              ? user !== null && item.viewerId === user.id
+              : item.viewerId === viewerId;
+            const isEditing = editingId === item.id;
 
             return (
               <div key={item.id} className="group flex gap-3">
-                <Avatar name={item.authorName} size={32} />
+                <Avatar
+                  name={item.authorName}
+                  src={item.authorAvatar}
+                  size={32}
+                />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-neutral-900">
@@ -277,8 +345,8 @@ export function CommentsPanel({
                       <div className="ml-auto flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                         <button
                           onClick={() => {
-                            setEditingId(item.id)
-                            setEditText(item.text)
+                            setEditingId(item.id);
+                            setEditText(item.text);
                           }}
                           className="cursor-pointer p-1 text-neutral-400 transition-colors hover:text-neutral-600"
                           title="Edit"
@@ -303,10 +371,10 @@ export function CommentsPanel({
                         value={editText}
                         onChange={(e) => setEditText(e.target.value)}
                         onKeyDown={(e) => {
-                          if (e.key === "Enter") void handleEdit(item.id)
+                          if (e.key === "Enter") void handleEdit(item.id);
                           if (e.key === "Escape") {
-                            setEditingId(null)
-                            setEditText("")
+                            setEditingId(null);
+                            setEditText("");
                           }
                         }}
                         className="flex-1 rounded-lg border border-neutral-200 bg-neutral-50 px-2 py-1 text-sm transition-colors focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 focus:outline-none"
@@ -320,8 +388,8 @@ export function CommentsPanel({
                       </button>
                       <button
                         onClick={() => {
-                          setEditingId(null)
-                          setEditText("")
+                          setEditingId(null);
+                          setEditText("");
                         }}
                         className="cursor-pointer p-1 text-neutral-400 transition-colors hover:text-neutral-600"
                         title="Cancel"
@@ -336,74 +404,121 @@ export function CommentsPanel({
                   )}
                 </div>
               </div>
-            )
+            );
           })
         )}
       </div>
 
       {/* Comment input */}
-      <div className="shrink-0 border-t border-neutral-200 px-4 py-3">
-        {/* Name display / edit row */}
-        {name && (
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-xs text-neutral-400">Commenting as</span>
-            <input
-              value={name}
-              onChange={(e) => handleNameChange(e.target.value)}
-              className="border-b border-transparent bg-transparent px-0 py-0 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-300 focus:border-neutral-500 focus:outline-none"
-              style={{ width: `${Math.max(name.length, 4)}ch` }}
-            />
-          </div>
-        )}
-
-        <div className="flex items-center gap-3">
-          <Avatar name={name || viewerId || "anonymous"} size={32} />
-          <div className="flex flex-1 items-center gap-2">
-            <div className="relative flex-1">
-              <input
-                ref={inputRef}
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                onKeyDown={(e) =>
-                  e.key === "Enter" && !e.shiftKey && void handleSubmit()
-                }
-                placeholder="Add a comment..."
-                disabled={submitting}
-                className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 pr-10 text-sm transition-colors placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 focus:outline-none disabled:opacity-50"
-              />
-              {/* Timestamp toggle inside input */}
-              <button
-                onClick={() => setAttachTimestamp((v) => !v)}
-                title={
-                  attachTimestamp
-                    ? `Timestamp at ${formatDuration(currentTime)} (click to remove)`
-                    : "Attach current timestamp"
-                }
-                className={`absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-1 transition-colors ${
-                  attachTimestamp
-                    ? "bg-neutral-200 text-neutral-900"
-                    : "text-neutral-400 hover:text-neutral-600"
-                }`}
-              >
-                <ClockIcon size={14} />
-              </button>
-            </div>
-            {attachTimestamp && (
-              <span className="font-mono text-xs whitespace-nowrap text-neutral-700">
-                @{formatDuration(currentTime)}
-              </span>
-            )}
-            <button
-              onClick={() => void handleSubmit()}
-              disabled={!text.trim() || submitting}
-              className="cursor-pointer rounded-lg p-2 text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30"
-              title="Send"
-            >
-              <PaperPlaneRightIcon size={16} />
-            </button>
+      {auth !== null && authEnabled && !user ? (
+        <div className="shrink-0 border-t border-neutral-200 px-4 py-4">
+          <p className="mb-3 text-center text-xs text-neutral-500">
+            Sign in to comment
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            {auth.providers.map((provider) => {
+              const { label, icon: Icon } = PROVIDER_LABELS[provider];
+              return (
+                <a
+                  key={provider}
+                  href={`/api/auth/login?provider=${provider}&redirect=${encodeURIComponent(
+                    window.location.pathname,
+                  )}`}
+                  className="inline-flex items-center gap-2 rounded-lg border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 transition-colors hover:bg-neutral-50"
+                >
+                  <Icon size={16} weight="bold" />
+                  {label}
+                </a>
+              );
+            })}
           </div>
         </div>
-      </div>
+      ) : auth !== null ? (
+        <div className="shrink-0 border-t border-neutral-200 px-4 py-3">
+          {/* Signed-in identity row */}
+          {authEnabled && user && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xs text-neutral-400">Commenting as</span>
+              <span className="text-xs font-medium text-neutral-700">
+                {user.name}
+              </span>
+              <button
+                onClick={() => void handleSignOut()}
+                className="ml-auto inline-flex cursor-pointer items-center gap-1 text-xs text-neutral-400 transition-colors hover:text-neutral-600"
+                title="Sign out"
+              >
+                <SignOutIcon size={12} />
+                Sign out
+              </button>
+            </div>
+          )}
+
+          {/* Name display / edit row (anonymous mode) */}
+          {!authEnabled && name && (
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-xs text-neutral-400">Commenting as</span>
+              <input
+                value={name}
+                onChange={(e) => handleNameChange(e.target.value)}
+                className="border-b border-transparent bg-transparent px-0 py-0 text-xs font-medium text-neutral-700 transition-colors hover:border-neutral-300 focus:border-neutral-500 focus:outline-none"
+                style={{ width: `${Math.max(name.length, 4)}ch` }}
+              />
+            </div>
+          )}
+
+          <div className="flex items-center gap-3">
+            <Avatar
+              name={user?.name || name || viewerId || "anonymous"}
+              src={user?.avatar}
+              size={32}
+            />
+            <div className="flex flex-1 items-center gap-2">
+              <div className="relative flex-1">
+                <input
+                  ref={inputRef}
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) =>
+                    e.key === "Enter" && !e.shiftKey && void handleSubmit()
+                  }
+                  placeholder="Add a comment..."
+                  disabled={submitting}
+                  className="w-full rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 pr-10 text-sm transition-colors placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-2 focus:ring-neutral-900/10 focus:outline-none disabled:opacity-50"
+                />
+                {/* Timestamp toggle inside input */}
+                <button
+                  onClick={() => setAttachTimestamp((v) => !v)}
+                  title={
+                    attachTimestamp
+                      ? `Timestamp at ${formatDuration(currentTime)} (click to remove)`
+                      : "Attach current timestamp"
+                  }
+                  className={`absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer rounded p-1 transition-colors ${
+                    attachTimestamp
+                      ? "bg-neutral-200 text-neutral-900"
+                      : "text-neutral-400 hover:text-neutral-600"
+                  }`}
+                >
+                  <ClockIcon size={14} />
+                </button>
+              </div>
+              {attachTimestamp && (
+                <span className="font-mono text-xs whitespace-nowrap text-neutral-700">
+                  @{formatDuration(currentTime)}
+                </span>
+              )}
+              <button
+                onClick={() => void handleSubmit()}
+                disabled={!text.trim() || submitting}
+                className="cursor-pointer rounded-lg p-2 text-neutral-900 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30"
+                title="Send"
+              >
+                <PaperPlaneRightIcon size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
-  )
+  );
 }
