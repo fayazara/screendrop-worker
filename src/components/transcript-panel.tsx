@@ -64,11 +64,22 @@ export function TranscriptPanel({
     null,
   );
   const [previewOpen, setPreviewOpen] = useState(false);
+  // Whether there's more to scroll below the fold, to show the bottom
+  // fade only when it's telling the truth.
+  const [canScrollDown, setCanScrollDown] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const activeSegmentRef = useRef<HTMLDivElement>(null);
   const userScrollingRef = useRef(false);
   const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const updateScrollFade = useCallback(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const remaining =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+    setCanScrollDown(remaining > 4);
+  }, []);
 
   const handleTimestampEnter = useCallback(
     (time: number, event: React.MouseEvent<HTMLElement>) => {
@@ -138,7 +149,19 @@ export function TranscriptPanel({
     scrollTimeoutRef.current = setTimeout(() => {
       userScrollingRef.current = false;
     }, 2000);
-  }, []);
+    updateScrollFade();
+  }, [updateScrollFade]);
+
+  // Recompute the bottom fade whenever the content or the container's
+  // own size changes (search filtering, panel resize, initial mount).
+  useEffect(() => {
+    updateScrollFade();
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(updateScrollFade);
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [updateScrollFade, filteredSegments.length]);
 
   const handleCopyTranscript = async () => {
     try {
@@ -260,41 +283,54 @@ export function TranscriptPanel({
       </div>
 
       {/* Segments */}
-      <div
-        ref={scrollContainerRef}
-        onScroll={handleScroll}
-        onMouseLeave={() => setPreviewOpen(false)}
-        className="flex-1 space-y-1 overflow-y-auto px-2 pb-2"
-      >
-        {filteredSegments.map((segment, index) => {
-          const originalIndex = searchQuery ? segments.indexOf(segment) : index;
-          const isActive = originalIndex === activeIndex;
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          onMouseLeave={() => setPreviewOpen(false)}
+          className="h-full space-y-1 overflow-y-auto px-2 pb-2"
+        >
+          {filteredSegments.map((segment, index) => {
+            const originalIndex = searchQuery
+              ? segments.indexOf(segment)
+              : index;
+            const isActive = originalIndex === activeIndex;
 
-          return (
-            <div
-              key={`${segment.start}-${index}`}
-              ref={isActive ? activeSegmentRef : undefined}
-              onClick={() => onSeek(segment.start)}
-              className={`flex cursor-pointer gap-3 rounded-xl px-3 py-2 transition-colors ${
-                isActive ? "bg-neutral-100" : "hover:bg-neutral-50"
-              }`}
-            >
-              <span
-                onMouseEnter={(e) => handleTimestampEnter(segment.start, e)}
-                className="-mx-1 w-11 shrink-0 rounded px-1 pt-0.5 text-sm font-medium text-neutral-800 tabular-nums transition-colors hover:bg-neutral-200/70"
-              >
-                {formatDuration(segment.start)}
-              </span>
-              <p
-                className={`text-sm leading-relaxed ${
-                  isActive ? "text-neutral-800" : "text-neutral-500"
+            return (
+              <div
+                key={`${segment.start}-${index}`}
+                ref={isActive ? activeSegmentRef : undefined}
+                onClick={() => onSeek(segment.start)}
+                className={`flex cursor-pointer gap-3 rounded-xl px-3 py-2 transition-colors ${
+                  isActive ? "bg-neutral-200" : "hover:bg-neutral-50"
                 }`}
               >
-                {highlightText(segment.text, searchQuery)}
-              </p>
-            </div>
-          );
-        })}
+                <span
+                  onMouseEnter={(e) => handleTimestampEnter(segment.start, e)}
+                  className="-mx-1 flex w-11 shrink-0 items-center justify-center rounded font-mono text-sm font-medium text-neutral-800 tabular-nums transition-colors hover:bg-neutral-300/50"
+                >
+                  {formatDuration(segment.start)}
+                </span>
+                <p
+                  className={`text-sm leading-relaxed ${
+                    isActive ? "text-neutral-800" : "text-neutral-500"
+                  }`}
+                >
+                  {highlightText(segment.text, searchQuery)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom fade — hints there's more below, fades out once the
+            viewer reaches the actual end so it never misrepresents. */}
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-neutral-50 to-transparent transition-opacity duration-200 ${
+            canScrollDown ? "opacity-100" : "opacity-0"
+          }`}
+        />
       </div>
     </div>
   );

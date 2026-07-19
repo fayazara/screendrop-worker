@@ -458,7 +458,7 @@ function Header({
   onSignOut: () => void;
 }) {
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4">
+    <header className="flex h-14 items-center justify-between border-b border-neutral-200 bg-white px-4">
       <a href="/" className="flex items-center gap-2">
         <img src="/favicon.ico" alt="" className="size-6" />
         <span className="font-semibold text-neutral-900">Screendrop</span>
