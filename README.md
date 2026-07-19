@@ -1,8 +1,8 @@
 # Screendrop Worker
 
-The cloud backend for [Screendrop](https://github.com/fayazara/screendrop), an open-source native macOS screenshot tool. This worker handles uploading, storing, and sharing screenshots and screen recordings via shareable links.
+The cloud backend for [Screendrop](https://github.com/fayazara/screendrop), an open-source native macOS screenshot and screen recording tool. This worker handles uploading, storing, and sharing captures — screenshots get a clean viewer, and recordings get a full Loom-style share page.
 
-Built with [TanStack Start](https://tanstack.com/start/latest) on [Cloudflare Workers](https://developers.cloudflare.com/workers/), with [Kumo](https://kumo-ui.com/) for the UI, [R2](https://developers.cloudflare.com/r2/) for file storage, and [D1](https://developers.cloudflare.com/d1/) for metadata.
+Built with [TanStack Start](https://tanstack.com/start/latest) on [Cloudflare Workers](https://developers.cloudflare.com/workers/), with [Kumo](https://kumo-ui.com/) for the UI, [Video.js v10](https://videojs.org/) for the player, [R2](https://developers.cloudflare.com/r2/) for file storage, and [D1](https://developers.cloudflare.com/d1/) for metadata.
 
 [![Deploy to Cloudflare](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/fayazara/screendrop-worker)
 
@@ -10,9 +10,18 @@ Built with [TanStack Start](https://tanstack.com/start/latest) on [Cloudflare Wo
 
 1. The Screendrop macOS app captures a screenshot or screen recording
 2. The file is uploaded to this worker (either via multipart form or streaming upload)
-3. The worker stores the file in R2 and creates a metadata row in D1
-4. A shareable link is returned (e.g. `https://your-worker.workers.dev/a1b2c3d4`)
-5. Anyone with the link sees a clean viewer page with download, copy link, and copy image actions
+3. For recordings, the app then sends sidecar assets in the background: a poster frame, a title, the on-device transcript, and a scrub-preview sprite sheet
+4. The worker stores files in R2 and metadata in D1
+5. A shareable link is returned (e.g. `https://your-worker.workers.dev/a1b2c3d4`)
+
+Anyone with a recording link sees a share page with:
+
+- A video player with hover scrub previews, captions, playback speed, picture-in-picture, and theater mode
+- A live transcript panel — the active line follows playback, clicking a line seeks, search filters with highlighting
+- Comments, optionally pinned to a timestamp; commenters pick a name once (kept in localStorage, no accounts)
+- View counts, and OG tags so links unfurl with a poster image in chat apps
+
+Screenshots keep a lightweight viewer page with download, copy link, and copy image actions. The transcript is rendered server-side, so share pages arrive readable and indexable.
 
 ## Deploy
 
@@ -169,16 +178,27 @@ pnpm run deploy
 
 All API routes are CORS-enabled. Routes marked with a lock require a Bearer token (`UPLOAD_TOKEN`).
 
-| Method | Route            | Auth   | Description                                         |
-| ------ | ---------------- | ------ | --------------------------------------------------- |
-| `GET`  | `/api/version`   | Public | Returns the deployed worker version                 |
-| `POST` | `/api/setup`     | Bearer | Idempotently provision the D1 schema                |
-| `GET`  | `/api/ping`      | Bearer | Connection health check (returns `version`)         |
-| `POST` | `/api/upload`    | Bearer | Multipart file upload                               |
-| `PUT`  | `/api/upload`    | Bearer | Streaming upload (raw bytes, metadata via headers)  |
-| `POST` | `/api/register`  | Bearer | Register metadata for a file already uploaded to R2 |
-| `GET`  | `/api/media/:id` | Public | Serve raw file from R2                              |
-| `GET`  | `/:id`           | Public | Image/video viewer page with OG tags                |
+| Method   | Route                     | Auth   | Description                                                        |
+| -------- | ------------------------- | ------ | ------------------------------------------------------------------ |
+| `GET`    | `/api/version`            | Public | Returns the deployed worker version                                |
+| `POST`   | `/api/setup`              | Bearer | Idempotently provision the D1 schema                               |
+| `GET`    | `/api/ping`               | Bearer | Connection health check (returns `version`)                        |
+| `POST`   | `/api/upload`             | Bearer | Multipart file upload                                              |
+| `PUT`    | `/api/upload`             | Bearer | Streaming upload (raw bytes, metadata via headers)                 |
+| `POST`   | `/api/register`           | Bearer | Register metadata for a file already uploaded to R2                |
+| `POST`   | `/api/assets/:id`         | Bearer | Attach sidecars to an upload: poster, transcript, storyboard, title |
+| `GET`    | `/api/media/:id`          | Public | Serve raw file from R2 (Range requests supported)                  |
+| `GET`    | `/api/image/:id`          | Public | Serve a screenshot from R2                                         |
+| `GET`    | `/api/poster/:id`         | Public | Poster frame for a recording                                       |
+| `GET`    | `/api/captions/:id`       | Public | Captions as WebVTT, generated from the stored transcript           |
+| `GET`    | `/api/storyboard/:id`     | Public | Scrub-preview sprite sheet                                         |
+| `GET`    | `/api/storyboard-vtt/:id` | Public | Thumbnails WebVTT pointing at sprite tiles                         |
+| `GET`    | `/api/comments/:id`       | Public | List comments for an upload                                        |
+| `POST`   | `/api/comments/:id`       | Public | Post a comment (anonymous viewer identity)                         |
+| `PATCH`  | `/api/comments/:id`       | Public | Edit a comment (same viewer only)                                  |
+| `DELETE` | `/api/comments/:id`       | Public | Delete a comment (same viewer only)                                |
+| `POST`   | `/api/view/:id`           | Public | Increment the view counter (client-deduplicated)                   |
+| `GET`    | `/:id`                    | Public | Share page (recordings) or viewer page (screenshots) with OG tags  |
 
 ### Upload (multipart)
 
@@ -214,6 +234,23 @@ curl -X PUT https://your-worker.workers.dev/api/upload \
   "size": 204800
 }
 ```
+
+### Sidecar assets
+
+After a video upload, the Screendrop app enriches the share page with a second, best-effort request. Every part is optional — the page works without them and upgrades as they land.
+
+```bash
+curl -X POST https://your-worker.workers.dev/api/assets/a1b2c3d4 \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "poster=@poster.jpg;type=image/jpeg" \
+  -F "title=Onboarding walkthrough" \
+  -F "transcript=@transcript.json" \
+  -F "storyboard=@storyboard.jpg;type=image/jpeg" \
+  -F 'storyboard_meta={"tileWidth":160,"tileHeight":104,"columns":6,"interval":2,"count":37}'
+```
+
+- `transcript` is JSON: `{ "cues": [{ "start", "end", "text" }], "words": [{ "text", "start", "end" }] }`. Cues drive the captions and transcript panel; word timings are optional.
+- `storyboard` is a sprite-sheet JPEG; `storyboard_meta` describes its grid. The worker generates the thumbnails WebVTT from it at request time.
 
 ## Configuration
 
