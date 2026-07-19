@@ -204,7 +204,7 @@ export function TranscriptPanel({
       {storyboard && preview && (
         <div
           className="pointer-events-none absolute z-10 hidden -translate-y-1/2 transition-[top] duration-200 ease-out lg:block"
-          style={{ top: preview.top, right: "calc(100% + 14px)" }}
+          style={{ top: preview.top, right: "calc(100% + 4px)" }}
         >
           <div
             className={`transcript-preview relative ${previewOpen ? "is-open" : ""}`}
@@ -259,7 +259,7 @@ export function TranscriptPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search transcript..."
-            className="w-full rounded-lg bg-neutral-100/70 py-1.5 pr-3 pl-8 text-xs transition-colors placeholder:text-neutral-400 focus:bg-neutral-100 focus:outline-none"
+            className="w-full rounded-lg bg-neutral-100 py-3 pr-3 pl-8 text-xs transition-colors placeholder:text-neutral-400 focus:bg-neutral-100 focus:outline-none"
           />
         </div>
         <button
@@ -307,7 +307,7 @@ export function TranscriptPanel({
               >
                 <span
                   onMouseEnter={(e) => handleTimestampEnter(segment.start, e)}
-                  className="-mx-1 flex w-11 shrink-0 items-center justify-center rounded font-mono text-sm font-medium text-neutral-800 tabular-nums transition-colors hover:bg-neutral-300/50"
+                  className="-mx-1 flex w-11 shrink-0 items-center justify-center rounded font-mono text-sm font-medium text-neutral-600 tabular-nums transition-colors hover:bg-neutral-300/50"
                 >
                   {formatDuration(segment.start)}
                 </span>

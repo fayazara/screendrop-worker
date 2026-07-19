@@ -1,18 +1,11 @@
-import {
-  DropdownMenu,
-  Tooltip,
-  TooltipProvider,
-  useKumoToastManager,
-} from "@cloudflare/kumo";
+import { DropdownMenu, Tabs, useKumoToastManager } from "@cloudflare/kumo";
 import { Button, LinkButton } from "@cloudflare/kumo/components/button";
 import {
   ArrowsInSimpleIcon,
   ArrowsOutSimpleIcon,
-  ChatTextIcon,
   DownloadSimpleIcon,
   EyeIcon,
   ShareNetworkIcon,
-  TextboxIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Upload } from "@/db/schema";
@@ -51,7 +44,7 @@ export function VideoShare({
 }: VideoShareProps) {
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [activeTab, setActiveTab] = useState<string>(
+  const [activeTab, setActiveTab] = useState(
     transcript ? "transcript" : "comments",
   );
   const [views, setViews] = useState(upload.views);
@@ -144,34 +137,17 @@ export function VideoShare({
   }, [upload.id]);
 
   const sidebarTabs = (
-    <TooltipProvider>
-      <div className="flex shrink-0 items-center gap-1 px-2 pb-2">
-        <Tooltip
-          content="Transcript"
-          render={
-            <Button
-              variant={activeTab === "transcript" ? "secondary" : "ghost"}
-              shape="square"
-              icon={TextboxIcon}
-              aria-label="Transcript"
-              onClick={() => setActiveTab("transcript")}
-            />
-          }
-        />
-        <Tooltip
-          content="Comments"
-          render={
-            <Button
-              variant={activeTab === "comments" ? "secondary" : "ghost"}
-              shape="square"
-              icon={ChatTextIcon}
-              aria-label="Comments"
-              onClick={() => setActiveTab("comments")}
-            />
-          }
-        />
-      </div>
-    </TooltipProvider>
+    <div className="shrink-0 px-2 pb-2">
+      <Tabs
+        tabs={[
+          { value: "transcript", label: "Transcript" },
+          { value: "comments", label: "Comments" },
+        ]}
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="max-w-max"
+      />
+    </div>
   );
 
   const sidebarContent =
