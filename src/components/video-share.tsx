@@ -1,10 +1,9 @@
 import { DropdownMenu, Tabs, useKumoToastManager } from "@cloudflare/kumo";
 import { Button, LinkButton } from "@cloudflare/kumo/components/button";
 import {
-  ArrowsInSimpleIcon,
-  ArrowsOutSimpleIcon,
+  ArrowsInLineHorizontalIcon,
+  ArrowsOutLineHorizontalIcon,
   DownloadSimpleIcon,
-  EyeIcon,
   ShareNetworkIcon,
 } from "@phosphor-icons/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -370,17 +369,14 @@ function VideoInfo({
             className="size-10 shrink-0 rounded-full"
           />
           <div className="min-w-0">
-            <p className="text-sm font-medium text-neutral-900">
-              {author.name}
-            </p>
+            <p className="font-medium text-neutral-900">{author.name}</p>
             <p className="text-xs text-neutral-500">{metadata}</p>
           </div>
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
+        <div className="flex flex-wrap items-center gap-1.5">
           <span className="mr-1 flex items-center gap-1.5 text-sm font-medium text-neutral-500">
-            <EyeIcon size={16} />
             {formatViews(views)}
           </span>
           <LikeButton
@@ -390,7 +386,7 @@ function VideoInfo({
           />
           <Button
             variant="secondary"
-            icon={ShareNetworkIcon}
+            icon={<ShareNetworkIcon weight="bold" />}
             onClick={() => void handleShare()}
           >
             Share
@@ -399,7 +395,7 @@ function VideoInfo({
             href={mediaSource}
             download={upload.filename}
             variant="secondary"
-            icon={DownloadSimpleIcon}
+            icon={<DownloadSimpleIcon weight="bold" />}
           >
             Download
           </LinkButton>
@@ -409,7 +405,19 @@ function VideoInfo({
             className="hidden lg:inline-flex"
             aria-label={isTheaterMode ? "Default view" : "Theater mode"}
             title={isTheaterMode ? "Default view" : "Theater mode"}
-            icon={isTheaterMode ? ArrowsInSimpleIcon : ArrowsOutSimpleIcon}
+            icon={
+              isTheaterMode ? (
+                <ArrowsInLineHorizontalIcon
+                  weight="bold"
+                  className="text-neutral-700"
+                />
+              ) : (
+                <ArrowsOutLineHorizontalIcon
+                  weight="bold"
+                  className="text-neutral-700"
+                />
+              )
+            }
             onClick={onToggleTheater}
           />
         </div>

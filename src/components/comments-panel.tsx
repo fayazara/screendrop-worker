@@ -284,7 +284,7 @@ export function CommentsPanel({
                         onClick={() => onSeek(item.timestamp!)}
                         className="inline-flex cursor-pointer items-center gap-1 rounded bg-neutral-100 px-1.5 py-0.5 font-mono text-xs text-neutral-700 transition-colors hover:bg-neutral-200"
                       >
-                        <ClockIcon size={10} />
+                        <ClockIcon size={10} weight="bold"/>
                         {formatDuration(item.timestamp)}
                       </button>
                     )}
@@ -427,7 +427,7 @@ export function CommentsPanel({
                       : "text-neutral-400 hover:text-neutral-600"
                   }`}
                 >
-                  <ClockIcon size={14} />
+                  <ClockIcon size={14} weight="bold"/>
                 </button>
               </div>
               {attachTimestamp && (

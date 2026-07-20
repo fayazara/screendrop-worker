@@ -117,8 +117,7 @@ function ViewerHeader({
         href={mediaSource}
         download={upload.filename}
         variant="secondary"
-        size="sm"
-        icon={DownloadSimpleIcon}
+        icon={<DownloadSimpleIcon weight="bold" />}
       >
         Download
       </LinkButton>
