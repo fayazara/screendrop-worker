@@ -12,8 +12,9 @@ import type { Upload } from "@/db/schema";
 import type { Author } from "@/lib/uploads.server";
 import type { Transcript } from "@/lib/transcript";
 import type { Chapter } from "@/components/video-player";
-import type { AuthUser } from "@/lib/use-auth";
+import type { AuthState, AuthUser } from "@/lib/use-auth";
 import { CommentsPanel } from "@/components/comments-panel";
+import { LikeButton } from "@/components/like-button";
 import { TranscriptPanel } from "@/components/transcript-panel";
 import { VideoPlayer, getChapterAtTime } from "@/components/video-player";
 import {
@@ -24,13 +25,14 @@ import {
 } from "@/lib/format";
 import { parseStoryboardMeta } from "@/lib/storyboard";
 import { useAuth } from "@/lib/use-auth";
-import { hasViewedShare, markShareViewed } from "@/lib/viewer-identity";
+import { recordShareView } from "@/lib/viewer-identity";
 
 interface VideoShareProps {
   upload: Upload;
   author: Author;
   origin: string;
   transcript: Transcript | null;
+  likeCount: number;
 }
 
 /** The share page, layout ported from Bloom: sticky header, video with
@@ -41,6 +43,7 @@ export function VideoShare({
   author,
   origin,
   transcript,
+  likeCount,
 }: VideoShareProps) {
   const [isTheaterMode, setIsTheaterMode] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -129,11 +132,9 @@ export function VideoShare({
 
   // Count each viewer once, client-guarded — good enough without auth.
   useEffect(() => {
-    if (hasViewedShare(upload.id)) return;
-    markShareViewed(upload.id);
-    fetch(`/api/view/${upload.id}`, { method: "POST" })
-      .then(() => setViews((count) => count + 1))
-      .catch(() => {});
+    void recordShareView(upload.id).then(
+      (counted) => counted && setViews((count) => count + 1),
+    );
   }, [upload.id]);
 
   const sidebarTabs = (
@@ -174,6 +175,8 @@ export function VideoShare({
       upload={upload}
       author={author}
       views={views}
+      likeCount={likeCount}
+      auth={auth}
       mediaSource={mediaSource}
       isTheaterMode={isTheaterMode}
       onToggleTheater={toggleTheater}
@@ -314,6 +317,8 @@ function VideoInfo({
   upload,
   author,
   views,
+  likeCount,
+  auth,
   mediaSource,
   isTheaterMode,
   onToggleTheater,
@@ -322,13 +327,22 @@ function VideoInfo({
   upload: Upload;
   author: Author;
   views: number;
+  likeCount: number;
+  auth: AuthState | null;
   mediaSource: string;
   isTheaterMode: boolean;
   onToggleTheater: () => void;
   onNotify: (message: string, variant?: "error") => void;
 }) {
-  const timeAgo = formatTimeAgo(upload.createdAt);
   const title = upload.title?.trim() || upload.filename;
+  // One quiet metadata line under the author instead of a separate bar.
+  const metadata = [
+    formatTimeAgo(upload.createdAt),
+    formatBytes(upload.size),
+    upload.duration ? formatDuration(upload.duration) : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   const handleShare = async () => {
     try {
@@ -342,12 +356,12 @@ function VideoInfo({
   return (
     <div className="flex flex-col">
       {/* Title */}
-      <h1 className="order-1 text-lg font-semibold text-neutral-900 lg:text-xl">
+      <h1 className="text-lg font-semibold text-neutral-900 lg:text-xl">
         {title}
       </h1>
 
       {/* Author + Actions row */}
-      <div className="order-2 mt-3 flex flex-wrap items-start justify-between gap-3">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
         {/* Author */}
         <div className="flex min-w-0 items-center gap-3">
           <img
@@ -359,12 +373,21 @@ function VideoInfo({
             <p className="text-sm font-medium text-neutral-900">
               {author.name}
             </p>
-            <p className="text-xs text-neutral-500">{timeAgo}</p>
+            <p className="text-xs text-neutral-500">{metadata}</p>
           </div>
         </div>
 
         {/* Actions */}
         <div className="flex flex-wrap items-center gap-1.5 lg:gap-2">
+          <span className="mr-1 flex items-center gap-1.5 text-sm font-medium text-neutral-500">
+            <EyeIcon size={16} />
+            {formatViews(views)}
+          </span>
+          <LikeButton
+            uploadId={upload.id}
+            auth={auth}
+            initialCount={likeCount}
+          />
           <Button
             variant="secondary"
             icon={ShareNetworkIcon}
@@ -389,23 +412,6 @@ function VideoInfo({
             icon={isTheaterMode ? ArrowsInSimpleIcon : ArrowsOutSimpleIcon}
             onClick={onToggleTheater}
           />
-        </div>
-      </div>
-
-      {/* Description */}
-      <div className="order-3 mt-4 rounded-2xl bg-neutral-200/50 p-3">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm font-medium text-neutral-900">
-          <span className="flex items-center gap-1 whitespace-nowrap">
-            <EyeIcon size={14} />
-            {formatViews(views)}
-          </span>
-          <span className="whitespace-nowrap">{formatBytes(upload.size)}</span>
-          {upload.duration && (
-            <span className="whitespace-nowrap">
-              {formatDuration(upload.duration)}
-            </span>
-          )}
-          <span className="whitespace-nowrap">{timeAgo}</span>
         </div>
       </div>
     </div>
@@ -450,7 +456,7 @@ function Header({
                 <img
                   src={
                     user.avatar ||
-                    `https://api.dicebear.com/9.x/initials/svg?seed=${encodeURIComponent(user.name)}`
+                    `https://api.dicebear.com/10.x/glyphs/svg?seed=${encodeURIComponent(user.name)}`
                   }
                   alt={user.name}
                   className="size-7 rounded-full"

@@ -1,5 +1,12 @@
-import { sql } from "drizzle-orm"
-import { index, integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { sql } from "drizzle-orm";
+import {
+  index,
+  integer,
+  primaryKey,
+  real,
+  sqliteTable,
+  text,
+} from "drizzle-orm/sqlite-core";
 
 export const uploads = sqliteTable(
   "uploads",
@@ -30,7 +37,7 @@ export const uploads = sqliteTable(
     views: integer("views").notNull().default(0),
   },
   (table) => [index("idx_uploads_created_at").on(table.createdAt)],
-)
+);
 
 export const comments = sqliteTable(
   "comments",
@@ -54,9 +61,44 @@ export const comments = sqliteTable(
       .default(sql`(datetime('now'))`),
   },
   (table) => [index("idx_comments_upload_id").on(table.uploadId)],
-)
+);
 
-export type Upload = typeof uploads.$inferSelect
-export type NewUpload = typeof uploads.$inferInsert
-export type Comment = typeof comments.$inferSelect
-export type NewComment = typeof comments.$inferInsert
+export const likes = sqliteTable(
+  "likes",
+  {
+    uploadId: text("upload_id").notNull(),
+    // Same identity model as comments.viewer_id: the OAuth subject when
+    // sign-in is configured, an anonymous localStorage id otherwise.
+    viewerId: text("viewer_id").notNull(),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [primaryKey({ columns: [table.uploadId, table.viewerId] })],
+);
+
+export const viewEvents = sqliteTable(
+  "view_events",
+  {
+    id: text("id").primaryKey(),
+    uploadId: text("upload_id").notNull(),
+    // Viewer geo from Cloudflare's request metadata.
+    country: text("country"),
+    city: text("city"),
+    // document.referrer of the visit; null for direct opens.
+    referrer: text("referrer"),
+    // Coarse device label derived from the User-Agent ("Mac", "iPhone", …).
+    device: text("device"),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (table) => [index("idx_view_events_upload_id").on(table.uploadId)],
+);
+
+export type Upload = typeof uploads.$inferSelect;
+export type NewUpload = typeof uploads.$inferInsert;
+export type Comment = typeof comments.$inferSelect;
+export type NewComment = typeof comments.$inferInsert;
+export type Like = typeof likes.$inferSelect;
+export type ViewEvent = typeof viewEvents.$inferSelect;

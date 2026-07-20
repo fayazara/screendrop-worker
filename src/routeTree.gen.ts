@@ -21,6 +21,7 @@ import { Route as ApiStoryboardIdRouteImport } from './routes/api/storyboard.$id
 import { Route as ApiStoryboardVttIdRouteImport } from './routes/api/storyboard-vtt.$id'
 import { Route as ApiPosterIdRouteImport } from './routes/api/poster.$id'
 import { Route as ApiMediaIdRouteImport } from './routes/api/media.$id'
+import { Route as ApiLikesIdRouteImport } from './routes/api/likes.$id'
 import { Route as ApiImageIdRouteImport } from './routes/api/image.$id'
 import { Route as ApiCommentsIdRouteImport } from './routes/api/comments.$id'
 import { Route as ApiCaptionsIdRouteImport } from './routes/api/captions.$id'
@@ -90,6 +91,11 @@ const ApiMediaIdRoute = ApiMediaIdRouteImport.update({
   path: '/api/media/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiLikesIdRoute = ApiLikesIdRouteImport.update({
+  id: '/api/likes/$id',
+  path: '/api/likes/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiImageIdRoute = ApiImageIdRouteImport.update({
   id: '/api/image/$id',
   path: '/api/image/$id',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
+  '/api/likes/$id': typeof ApiLikesIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/api/poster/$id': typeof ApiPosterIdRoute
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
@@ -168,6 +175,7 @@ export interface FileRoutesByTo {
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
+  '/api/likes/$id': typeof ApiLikesIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/api/poster/$id': typeof ApiPosterIdRoute
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
@@ -191,6 +199,7 @@ export interface FileRoutesById {
   '/api/captions/$id': typeof ApiCaptionsIdRoute
   '/api/comments/$id': typeof ApiCommentsIdRoute
   '/api/image/$id': typeof ApiImageIdRoute
+  '/api/likes/$id': typeof ApiLikesIdRoute
   '/api/media/$id': typeof ApiMediaIdRoute
   '/api/poster/$id': typeof ApiPosterIdRoute
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
@@ -215,6 +224,7 @@ export interface FileRouteTypes {
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
+    | '/api/likes/$id'
     | '/api/media/$id'
     | '/api/poster/$id'
     | '/api/storyboard-vtt/$id'
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
+    | '/api/likes/$id'
     | '/api/media/$id'
     | '/api/poster/$id'
     | '/api/storyboard-vtt/$id'
@@ -259,6 +270,7 @@ export interface FileRouteTypes {
     | '/api/captions/$id'
     | '/api/comments/$id'
     | '/api/image/$id'
+    | '/api/likes/$id'
     | '/api/media/$id'
     | '/api/poster/$id'
     | '/api/storyboard-vtt/$id'
@@ -282,6 +294,7 @@ export interface RootRouteChildren {
   ApiCaptionsIdRoute: typeof ApiCaptionsIdRoute
   ApiCommentsIdRoute: typeof ApiCommentsIdRoute
   ApiImageIdRoute: typeof ApiImageIdRoute
+  ApiLikesIdRoute: typeof ApiLikesIdRoute
   ApiMediaIdRoute: typeof ApiMediaIdRoute
   ApiPosterIdRoute: typeof ApiPosterIdRoute
   ApiStoryboardVttIdRoute: typeof ApiStoryboardVttIdRoute
@@ -376,6 +389,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMediaIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/likes/$id': {
+      id: '/api/likes/$id'
+      path: '/api/likes/$id'
+      fullPath: '/api/likes/$id'
+      preLoaderRoute: typeof ApiLikesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/image/$id': {
       id: '/api/image/$id'
       path: '/api/image/$id'
@@ -450,6 +470,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCaptionsIdRoute: ApiCaptionsIdRoute,
   ApiCommentsIdRoute: ApiCommentsIdRoute,
   ApiImageIdRoute: ApiImageIdRoute,
+  ApiLikesIdRoute: ApiLikesIdRoute,
   ApiMediaIdRoute: ApiMediaIdRoute,
   ApiPosterIdRoute: ApiPosterIdRoute,
   ApiStoryboardVttIdRoute: ApiStoryboardVttIdRoute,

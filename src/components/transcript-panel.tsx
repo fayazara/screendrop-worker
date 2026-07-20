@@ -1,4 +1,4 @@
-import { CopyIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Transcript } from "@/lib/transcript";
 import type { StoryboardMeta } from "@/lib/storyboard";
@@ -43,8 +43,8 @@ function storyboardTileStyle(
 /**
  * The live transcript panel, ported from Bloom: one row per segment with
  * a mono timestamp, the active row following playback (centered by
- * auto-scroll unless the viewer is scrolling), search with highlighting,
- * and an Auto toggle for the follow behavior.
+ * auto-scroll unless the viewer is scrolling), and search with
+ * highlighting.
  */
 export function TranscriptPanel({
   transcript,
@@ -56,7 +56,6 @@ export function TranscriptPanel({
 }: TranscriptPanelProps) {
   const segments = transcript.cues;
   const [searchQuery, setSearchQuery] = useState("");
-  const [autoScroll, setAutoScroll] = useState(true);
   // Frame preview following the hovered timestamp: one element whose
   // `top` transitions, so it glides between rows. It stays mounted with
   // `previewOpen` false while closing so the exit animation can play.
@@ -119,7 +118,6 @@ export function TranscriptPanel({
     const activeSegment = activeSegmentRef.current;
 
     if (
-      !autoScroll ||
       searchQuery ||
       !container ||
       !activeSegment ||
@@ -140,7 +138,7 @@ export function TranscriptPanel({
       top: Math.max(0, targetTop),
       behavior: "smooth",
     });
-  }, [activeIndex, autoScroll, searchQuery]);
+  }, [activeIndex, searchQuery]);
 
   // Detect user scrolling to pause auto-scroll
   const handleScroll = useCallback(() => {
@@ -162,16 +160,6 @@ export function TranscriptPanel({
     observer.observe(container);
     return () => observer.disconnect();
   }, [updateScrollFade, filteredSegments.length]);
-
-  const handleCopyTranscript = async () => {
-    try {
-      await navigator.clipboard.writeText(
-        segments.map((segment) => segment.text).join(" "),
-      );
-    } catch {
-      // fallback: do nothing
-    }
-  };
 
   // Highlight search matches in text
   const highlightText = (text: string, query: string) => {
@@ -248,9 +236,9 @@ export function TranscriptPanel({
         </div>
       )}
 
-      {/* Search + controls, one quiet row */}
-      <div className="flex shrink-0 items-center gap-1 px-2 pb-2">
-        <div className="relative flex-1">
+      {/* Search, one quiet row */}
+      <div className="shrink-0 px-2 pb-2">
+        <div className="relative">
           <MagnifyingGlassIcon
             size={14}
             className="absolute top-1/2 left-2.5 -translate-y-1/2 text-neutral-400"
@@ -262,24 +250,6 @@ export function TranscriptPanel({
             className="w-full rounded-lg bg-neutral-100 py-3 pr-3 pl-8 text-xs transition-colors placeholder:text-neutral-400 focus:bg-neutral-100 focus:outline-none"
           />
         </div>
-        <button
-          onClick={() => setAutoScroll(!autoScroll)}
-          className={`cursor-pointer rounded-md px-2 py-1 text-xs transition-colors ${
-            autoScroll
-              ? "bg-neutral-900 text-white"
-              : "text-neutral-400 hover:text-neutral-600"
-          }`}
-          title={autoScroll ? "Auto-scroll enabled" : "Auto-scroll disabled"}
-        >
-          Auto
-        </button>
-        <button
-          onClick={() => void handleCopyTranscript()}
-          className="cursor-pointer rounded-md p-1.5 text-neutral-400 transition-colors hover:text-neutral-600"
-          title="Copy transcript"
-        >
-          <CopyIcon size={14} />
-        </button>
       </div>
 
       {/* Segments */}

@@ -1,71 +1,80 @@
-import { SkeletonLine, useKumoToastManager } from "@cloudflare/kumo"
-import { Button, LinkButton } from "@cloudflare/kumo/components/button"
+import { SkeletonLine, useKumoToastManager } from "@cloudflare/kumo";
+import { Button, LinkButton } from "@cloudflare/kumo/components/button";
 import {
   CopyIcon,
   DownloadSimpleIcon,
   LinkSimpleIcon,
-} from "@phosphor-icons/react"
-import { useEffect, useRef, useState } from "react"
-import type { Upload } from "@/db/schema"
-import type { Author } from "@/lib/uploads.server"
+} from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
+import type { Upload } from "@/db/schema";
+import type { Author } from "@/lib/uploads.server";
+import type { AuthState } from "@/lib/use-auth";
+import { LikeButton } from "@/components/like-button";
+import { formatViews } from "@/lib/format";
+import { useAuth } from "@/lib/use-auth";
+import { recordShareView } from "@/lib/viewer-identity";
 
 interface ShareViewerProps {
-  upload: Upload
-  author: Author
-  origin: string
+  upload: Upload;
+  author: Author;
+  origin: string;
+  likeCount: number;
 }
 
 function formatBytes(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 function formatTimeAgo(dateString: string): string {
-  const date = new Date(`${dateString.replace(" ", "T")}Z`)
-  const difference = Math.floor((Date.now() - date.getTime()) / 1000)
-  if (difference < 60) return "just now"
-  if (difference < 3600) return `${Math.floor(difference / 60)} min ago`
-  if (difference < 86400) return `${Math.floor(difference / 3600)} hours ago`
+  const date = new Date(`${dateString.replace(" ", "T")}Z`);
+  const difference = Math.floor((Date.now() - date.getTime()) / 1000);
+  if (difference < 60) return "just now";
+  if (difference < 3600) return `${Math.floor(difference / 60)} min ago`;
+  if (difference < 86400) return `${Math.floor(difference / 3600)} hours ago`;
   if (difference < 2592000) {
-    return `${Math.floor(difference / 86400)} days ago`
+    return `${Math.floor(difference / 86400)} days ago`;
   }
-  return date.toLocaleDateString()
+  return date.toLocaleDateString();
 }
 
 function ViewerHeader({
   upload,
   author,
+  likeCount,
+  views,
+  auth,
   mediaSource,
   showNotice,
 }: ShareViewerProps & {
-  mediaSource: string
-  showNotice: (message: string, variant?: "error") => void
+  views: number;
+  auth: AuthState | null;
+  mediaSource: string;
+  showNotice: (message: string, variant?: "error") => void;
 }) {
   const dimensions =
-    upload.width && upload.height
-      ? `${upload.width} × ${upload.height}`
-      : null
+    upload.width && upload.height ? `${upload.width} × ${upload.height}` : null;
 
   async function copyLink() {
     try {
-      await navigator.clipboard.writeText(window.location.href)
-      showNotice("Link copied")
+      await navigator.clipboard.writeText(window.location.href);
+      showNotice("Link copied");
     } catch {
-      showNotice("Failed to copy link", "error")
+      showNotice("Failed to copy link", "error");
     }
   }
 
   async function copyImage() {
     try {
-      const response = await fetch(mediaSource)
-      const blob = await response.blob()
+      const response = await fetch(mediaSource);
+      const blob = await response.blob();
       await navigator.clipboard.write([
         new ClipboardItem({ [blob.type]: blob }),
-      ])
-      showNotice("Image copied")
+      ]);
+      showNotice("Image copied");
     } catch {
-      showNotice("Failed to copy image", "error")
+      showNotice("Failed to copy image", "error");
     }
   }
 
@@ -74,11 +83,18 @@ function ViewerHeader({
       {author.name}
       {dimensions ? ` · ${dimensions}` : ""}
       {` · ${formatBytes(upload.size)} · ${formatTimeAgo(upload.createdAt)}`}
+      {` · ${formatViews(views)}`}
     </>
-  )
+  );
 
   const actions = (
     <>
+      <LikeButton
+        uploadId={upload.id}
+        auth={auth}
+        initialCount={likeCount}
+        size="sm"
+      />
       <Button
         variant="ghost"
         shape="square"
@@ -107,7 +123,7 @@ function ViewerHeader({
         Download
       </LinkButton>
     </>
-  )
+  );
 
   return (
     <>
@@ -137,32 +153,45 @@ function ViewerHeader({
         {actions}
       </div>
     </>
-  )
+  );
 }
 
 export function ShareViewer(props: ShareViewerProps) {
-  const { upload, origin } = props
-  const mediaSource = `${origin}/api/image/${upload.id}`
-  const [loadedImageSource, setLoadedImageSource] = useState<string | null>(null)
-  const imageRef = useRef<HTMLImageElement | null>(null)
-  const toastManager = useKumoToastManager()
-  const imageLoaded = loadedImageSource === mediaSource
+  const { upload, origin } = props;
+  const mediaSource = `${origin}/api/image/${upload.id}`;
+  const [loadedImageSource, setLoadedImageSource] = useState<string | null>(
+    null,
+  );
+  const [views, setViews] = useState(upload.views);
+  const imageRef = useRef<HTMLImageElement | null>(null);
+  const toastManager = useKumoToastManager();
+  const { auth } = useAuth();
+  const imageLoaded = loadedImageSource === mediaSource;
+
+  // Count each viewer once, client-guarded — good enough without auth.
+  useEffect(() => {
+    void recordShareView(upload.id).then(
+      (counted) => counted && setViews((count) => count + 1),
+    );
+  }, [upload.id]);
 
   useEffect(() => {
-    const image = imageRef.current
+    const image = imageRef.current;
     if (image?.complete) {
-      setLoadedImageSource(mediaSource)
+      setLoadedImageSource(mediaSource);
     }
-  }, [mediaSource])
+  }, [mediaSource]);
 
   function showNotice(message: string, variant?: "error") {
-    toastManager.add({ title: message, variant })
+    toastManager.add({ title: message, variant });
   }
 
   return (
     <div className="relative isolate flex h-dvh w-full flex-col bg-neutral-100">
       <ViewerHeader
         {...props}
+        views={views}
+        auth={auth}
         mediaSource={mediaSource}
         showNotice={showNotice}
       />
@@ -205,5 +234,5 @@ export function ShareViewer(props: ShareViewerProps) {
         </div>
       </main>
     </div>
-  )
+  );
 }
