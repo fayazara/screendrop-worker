@@ -169,7 +169,7 @@ export function TranscriptPanel({
     );
     return parts.map((part, i) =>
       part.toLowerCase() === query.toLowerCase() ? (
-        <mark key={i} className="rounded bg-amber-100 px-0.5 text-amber-900">
+        <mark key={i} className="rounded-xs bg-amber-100 text-amber-800">
           {part}
         </mark>
       ) : (
@@ -247,7 +247,7 @@ export function TranscriptPanel({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search transcript..."
-            className="w-full rounded-lg bg-neutral-100 py-3 pr-3 pl-8 text-xs transition-colors placeholder:text-neutral-400 focus:bg-neutral-100 focus:outline-none"
+            className="w-full rounded-lg bg-neutral-100 py-3 pr-3 pl-8 text-xs transition-colors placeholder:text-neutral-400 focus:bg-neutral-200 focus:outline-none"
           />
         </div>
       </div>
@@ -271,16 +271,17 @@ export function TranscriptPanel({
                 key={`${segment.start}-${index}`}
                 ref={isActive ? activeSegmentRef : undefined}
                 onClick={() => onSeek(segment.start)}
-                className={`flex cursor-pointer gap-3 rounded-xl px-3 py-2 transition-colors ${
+                className={`flex cursor-pointer gap-1.5 rounded-xl px-3 py-2 transition-colors ${
                   isActive ? "bg-neutral-200" : "hover:bg-neutral-50"
                 }`}
               >
                 <span
                   onMouseEnter={(e) => handleTimestampEnter(segment.start, e)}
-                  className="-mx-1 flex w-11 shrink-0 items-center justify-center rounded font-mono text-sm font-medium text-neutral-600 tabular-nums transition-colors hover:bg-neutral-300/50"
+                  className="-mx-1 flex w-10 shrink-0 items-center justify-center rounded font-mono text-sm font-medium text-neutral-600 tabular-nums transition-colors hover:bg-neutral-300/50"
                 >
                   {formatDuration(segment.start)}
                 </span>
+                <span className="text-neutral-300">•</span>
                 <p
                   className={`text-sm leading-relaxed ${
                     isActive ? "text-neutral-800" : "text-neutral-500"
