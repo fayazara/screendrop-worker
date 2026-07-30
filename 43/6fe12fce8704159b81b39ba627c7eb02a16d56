@@ -1,0 +1,23 @@
+drizzle/0005_stormy_puck.sql
+  s_2936416c2da333::t_31bd99d27742f2 1
+drizzle/meta/0005_snapshot.json
+  s_2936416c2da333::t_4420322f049e5c 1-349
+drizzle/meta/_journal.json
+  s_2936416c2da333::t_df9a8d6e0d7116 39-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "436fe12fce8704159b81b39ba627c7eb02a16d56",
+  "prompts": {},
+  "sessions": {
+    "s_2936416c2da333": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ba597bc0-0715-438f-a182-01ee5807f32b",
+        "model": "claude-sonnet-5"
+      },
+      "human_author": "Fayaz Ahmed <fayazara@gmail.com>"
+    }
+  }
+}
