@@ -274,7 +274,7 @@ curl -X POST https://your-worker.workers.dev/api/assets/a1b2c3d4 \
 
 ### Secrets
 
-Set via `wrangler secret put`, or prompted automatically during the Deploy to Cloudflare flow (defined in `.dev.vars.example`):
+`UPLOAD_TOKEN`, `AUTHOR_NAME`, and `AUTHOR_AVATAR` are offered during the Deploy to Cloudflare flow (defined in `.dev.vars.example`). Optional OAuth credentials are configured after deployment so they do not block the default setup:
 
 | Secret          | Description                                                         | Required |
 | --------------- | ------------------------------------------------------------------- | -------- |
@@ -305,6 +305,8 @@ wrangler secret put GITHUB_CLIENT_SECRET
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
 ```
+
+For local development, add the same names to your uncommitted `.dev.vars` file. They are intentionally omitted from `.dev.vars.example` because Deploy to Cloudflare treats every declared secret as a setup input.
 
 Configure one provider or both — only configured providers show up as sign-in buttons. Removing both secrets turns off comments and likes entirely (no anonymous fallback).
 
