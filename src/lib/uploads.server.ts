@@ -151,3 +151,95 @@ export async function getLikeCount(uploadId: string): Promise<number> {
 export function isVideoContentType(contentType: string): boolean {
   return contentType.startsWith("video/");
 }
+
+export function parseOptionalInteger(value: unknown): number | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function parseOptionalNumber(value: unknown): number | null {
+  if (typeof value !== "string" || value.length === 0) return null;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Comments/likes are on by default; only an explicit "false"/"0" turns
+// them off for an upload.
+export function parseSocialEnabled(value: unknown): boolean {
+  if (typeof value !== "string") return true;
+  return value !== "false" && value !== "0";
+}
+
+/** Upload metadata sent as X-* headers by the streaming and multipart APIs. */
+export interface UploadFields {
+  filename: string;
+  contentType: string;
+  mediaType: string;
+  width: number | null;
+  height: number | null;
+  duration: number | null;
+  title: string | null;
+  socialEnabled: boolean;
+}
+
+/** Returns null when the required X-Filename header is missing. */
+export function uploadFieldsFromHeaders(headers: Headers): UploadFields | null {
+  const filename = headers.get("x-filename");
+  if (!filename) return null;
+
+  const contentType = headers.get("content-type") || "application/octet-stream";
+  const rawTitle = headers.get("x-title");
+
+  return {
+    filename,
+    contentType,
+    mediaType:
+      headers.get("x-media-type") ||
+      (isVideoContentType(contentType) ? "video" : "image"),
+    width: parseOptionalInteger(headers.get("x-width")),
+    height: parseOptionalInteger(headers.get("x-height")),
+    duration: parseOptionalNumber(headers.get("x-duration")),
+    title: rawTitle
+      ? decodeURIComponent(rawTitle).trim().slice(0, 200) || null
+      : null,
+    socialEnabled: parseSocialEnabled(headers.get("x-social-enabled")),
+  };
+}
+
+export function newUploadId(): string {
+  return crypto.randomUUID().split("-")[0];
+}
+
+export async function insertUpload(upload: {
+  id: string;
+  r2Key: string;
+  size: number;
+  fields: UploadFields;
+}): Promise<void> {
+  const { fields } = upload;
+  await db.insert(uploads).values({
+    id: upload.id,
+    filename: fields.filename,
+    contentType: fields.contentType,
+    size: upload.size,
+    width: fields.width,
+    height: fields.height,
+    r2Key: upload.r2Key,
+    mediaType: fields.mediaType,
+    duration: fields.duration,
+    title: fields.title,
+    socialEnabled: fields.socialEnabled,
+  });
+}
+
+/** Response body shared by every endpoint that creates an upload. */
+export function uploadCreatedBody(
+  request: Request,
+  id: string,
+  filename: string,
+  size: number,
+) {
+  const origin = new URL(request.url).origin;
+  return { id, url: `${origin}/${id}`, filename, size };
+}
