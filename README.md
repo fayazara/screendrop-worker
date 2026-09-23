@@ -187,6 +187,10 @@ All API routes are CORS-enabled. Routes marked with a lock require a Bearer toke
 | `GET`    | `/api/ping`               | Bearer | Connection health check (returns `version`)                        |
 | `POST`   | `/api/upload`             | Bearer | Multipart file upload                                              |
 | `PUT`    | `/api/upload`             | Bearer | Streaming upload (raw bytes, metadata via headers)                 |
+| `POST`   | `/api/upload/multipart`   | Bearer | Start a chunked upload for files over 100 MB (same headers as `PUT`) |
+| `PUT`    | `/api/upload/multipart/:id` | Bearer | Upload one part (`?key=&uploadId=&partNumber=`)                  |
+| `POST`   | `/api/upload/multipart/:id` | Bearer | Complete a chunked upload (`{ key, uploadId, parts }`)           |
+| `DELETE` | `/api/upload/multipart/:id` | Bearer | Abort a chunked upload (`?key=&uploadId=`)                       |
 | `POST`   | `/api/register`           | Bearer | Register metadata for a file already uploaded to R2                |
 | `POST`   | `/api/assets/:id`         | Bearer | Attach sidecars to an upload: poster, transcript, storyboard, title |
 | `DELETE` | `/api/upload/:id`         | Bearer | Delete an upload permanently: R2 files, comments, likes, view events |
@@ -241,6 +245,33 @@ curl -X PUT https://your-worker.workers.dev/api/upload \
 ```
 
 `X-Title` and `X-Social-Enabled` are both optional, with the same defaults as the multipart form above.
+
+### Upload (chunked, for files over 100 MB)
+
+Cloudflare rejects request bodies over 100 MB on Free and Pro plans (200 MB on Business; Enterprise zones can raise it to 5 GB) with an HTML `413` before the Worker runs. Larger files use R2 multipart uploads through the Worker, so clients still need only the worker URL and upload token.
+
+```bash
+# 1. Start: same X-* headers as the streaming upload
+curl -X POST https://your-worker.workers.dev/api/upload/multipart \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: video/mp4" \
+  -H "X-Filename: recording.mp4"
+# → { "id": "…", "key": "uploads/…/recording.mp4", "uploadId": "…" }
+
+# 2. Upload each part (1-based partNumber)
+curl -X PUT "https://your-worker.workers.dev/api/upload/multipart/ID?key=KEY&uploadId=UPLOAD_ID&partNumber=1" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  --data-binary @part1.bin
+# → { "partNumber": 1, "etag": "…" }
+
+# 3. Complete: returns the same body as PUT /api/upload
+curl -X POST https://your-worker.workers.dev/api/upload/multipart/ID \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"KEY","uploadId":"UPLOAD_ID","parts":[{"partNumber":1,"etag":"…"}]}'
+```
+
+Every part except the last must be at least 5 MiB, and all non-final parts must be the same size. A part size of 50 MiB stays well under the body limit. `DELETE /api/upload/multipart/ID?key=KEY&uploadId=UPLOAD_ID` aborts an unfinished upload and discards its parts.
 
 ### Response
 

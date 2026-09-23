@@ -17,6 +17,7 @@ import { Route as ApiSetupRouteImport } from './routes/api/setup'
 import { Route as ApiRegisterRouteImport } from './routes/api/register'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as ApiViewIdRouteImport } from './routes/api/view.$id'
+import { Route as ApiUploadMultipartRouteImport } from './routes/api/upload.multipart'
 import { Route as ApiUploadIdRouteImport } from './routes/api/upload.$id'
 import { Route as ApiStoryboardIdRouteImport } from './routes/api/storyboard.$id'
 import { Route as ApiStoryboardVttIdRouteImport } from './routes/api/storyboard-vtt.$id'
@@ -30,6 +31,7 @@ import { Route as ApiAuthMeRouteImport } from './routes/api/auth/me'
 import { Route as ApiAuthLogoutRouteImport } from './routes/api/auth/logout'
 import { Route as ApiAuthLoginRouteImport } from './routes/api/auth/login'
 import { Route as ApiAssetsIdRouteImport } from './routes/api/assets.$id'
+import { Route as ApiUploadMultipartIdRouteImport } from './routes/api/upload.multipart.$id'
 import { Route as ApiAuthCallbackProviderRouteImport } from './routes/api/auth/callback.$provider'
 
 const IdRoute = IdRouteImport.update({
@@ -71,6 +73,11 @@ const ApiViewIdRoute = ApiViewIdRouteImport.update({
   id: '/api/view/$id',
   path: '/api/view/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadMultipartRoute = ApiUploadMultipartRouteImport.update({
+  id: '/multipart',
+  path: '/multipart',
+  getParentRoute: () => ApiUploadRoute,
 } as any)
 const ApiUploadIdRoute = ApiUploadIdRouteImport.update({
   id: '/$id',
@@ -137,6 +144,11 @@ const ApiAssetsIdRoute = ApiAssetsIdRouteImport.update({
   path: '/api/assets/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiUploadMultipartIdRoute = ApiUploadMultipartIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiUploadMultipartRoute,
+} as any)
 const ApiAuthCallbackProviderRoute = ApiAuthCallbackProviderRouteImport.update({
   id: '/api/auth/callback/$provider',
   path: '/api/auth/callback/$provider',
@@ -164,8 +176,10 @@ export interface FileRoutesByFullPath {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/upload/multipart': typeof ApiUploadMultipartRouteWithChildren
   '/api/view/$id': typeof ApiViewIdRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+  '/api/upload/multipart/$id': typeof ApiUploadMultipartIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -188,8 +202,10 @@ export interface FileRoutesByTo {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/upload/multipart': typeof ApiUploadMultipartRouteWithChildren
   '/api/view/$id': typeof ApiViewIdRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+  '/api/upload/multipart/$id': typeof ApiUploadMultipartIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -213,8 +229,10 @@ export interface FileRoutesById {
   '/api/storyboard-vtt/$id': typeof ApiStoryboardVttIdRoute
   '/api/storyboard/$id': typeof ApiStoryboardIdRoute
   '/api/upload/$id': typeof ApiUploadIdRoute
+  '/api/upload/multipart': typeof ApiUploadMultipartRouteWithChildren
   '/api/view/$id': typeof ApiViewIdRoute
   '/api/auth/callback/$provider': typeof ApiAuthCallbackProviderRoute
+  '/api/upload/multipart/$id': typeof ApiUploadMultipartIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -239,8 +257,10 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/upload/$id'
+    | '/api/upload/multipart'
     | '/api/view/$id'
     | '/api/auth/callback/$provider'
+    | '/api/upload/multipart/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -263,8 +283,10 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/upload/$id'
+    | '/api/upload/multipart'
     | '/api/view/$id'
     | '/api/auth/callback/$provider'
+    | '/api/upload/multipart/$id'
   id:
     | '__root__'
     | '/'
@@ -287,8 +309,10 @@ export interface FileRouteTypes {
     | '/api/storyboard-vtt/$id'
     | '/api/storyboard/$id'
     | '/api/upload/$id'
+    | '/api/upload/multipart'
     | '/api/view/$id'
     | '/api/auth/callback/$provider'
+    | '/api/upload/multipart/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -372,6 +396,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/view/$id'
       preLoaderRoute: typeof ApiViewIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/upload/multipart': {
+      id: '/api/upload/multipart'
+      path: '/multipart'
+      fullPath: '/api/upload/multipart'
+      preLoaderRoute: typeof ApiUploadMultipartRouteImport
+      parentRoute: typeof ApiUploadRoute
     }
     '/api/upload/$id': {
       id: '/api/upload/$id'
@@ -464,6 +495,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAssetsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/upload/multipart/$id': {
+      id: '/api/upload/multipart/$id'
+      path: '/$id'
+      fullPath: '/api/upload/multipart/$id'
+      preLoaderRoute: typeof ApiUploadMultipartIdRouteImport
+      parentRoute: typeof ApiUploadMultipartRoute
+    }
     '/api/auth/callback/$provider': {
       id: '/api/auth/callback/$provider'
       path: '/api/auth/callback/$provider'
@@ -474,12 +512,25 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface ApiUploadMultipartRouteChildren {
+  ApiUploadMultipartIdRoute: typeof ApiUploadMultipartIdRoute
+}
+
+const ApiUploadMultipartRouteChildren: ApiUploadMultipartRouteChildren = {
+  ApiUploadMultipartIdRoute: ApiUploadMultipartIdRoute,
+}
+
+const ApiUploadMultipartRouteWithChildren =
+  ApiUploadMultipartRoute._addFileChildren(ApiUploadMultipartRouteChildren)
+
 interface ApiUploadRouteChildren {
   ApiUploadIdRoute: typeof ApiUploadIdRoute
+  ApiUploadMultipartRoute: typeof ApiUploadMultipartRouteWithChildren
 }
 
 const ApiUploadRouteChildren: ApiUploadRouteChildren = {
   ApiUploadIdRoute: ApiUploadIdRoute,
+  ApiUploadMultipartRoute: ApiUploadMultipartRouteWithChildren,
 }
 
 const ApiUploadRouteWithChildren = ApiUploadRoute._addFileChildren(

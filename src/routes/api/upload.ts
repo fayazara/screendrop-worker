@@ -3,26 +3,17 @@ import { env } from "cloudflare:workers"
 import { db } from "@/db"
 import { uploads } from "@/db/schema"
 import { json, optionsResponse, protectedApi } from "@/lib/api.server"
-import { ensureSchema, isVideoContentType } from "@/lib/uploads.server"
-
-function parseOptionalInteger(value: FormDataEntryValue | string | null) {
-  if (typeof value !== "string" || value.length === 0) return null
-  const parsed = Number.parseInt(value, 10)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-function parseOptionalNumber(value: FormDataEntryValue | string | null) {
-  if (typeof value !== "string" || value.length === 0) return null
-  const parsed = Number.parseFloat(value)
-  return Number.isFinite(parsed) ? parsed : null
-}
-
-// Comments/likes are on by default; only an explicit "false"/"0" turns
-// them off for this upload.
-function parseSocialEnabled(value: FormDataEntryValue | string | null) {
-  if (typeof value !== "string") return true
-  return value !== "false" && value !== "0"
-}
+import {
+  ensureSchema,
+  insertUpload,
+  isVideoContentType,
+  newUploadId,
+  parseOptionalInteger,
+  parseOptionalNumber,
+  parseSocialEnabled,
+  uploadCreatedBody,
+  uploadFieldsFromHeaders,
+} from "@/lib/uploads.server"
 
 export const Route = createFileRoute("/api/upload")({
   server: {
@@ -37,7 +28,7 @@ export const Route = createFileRoute("/api/upload")({
             return json({ error: "No file provided" }, 400)
           }
 
-          const id = crypto.randomUUID().split("-")[0]
+          const id = newUploadId()
           const r2Key = `uploads/${id}/${file.name}`
           const contentType = file.type || "application/octet-stream"
           const requestedMediaType = formData.get("media_type")
@@ -84,11 +75,8 @@ export const Route = createFileRoute("/api/upload")({
         protectedApi(request, env.UPLOAD_TOKEN, async () => {
           await ensureSchema()
 
-          const filename = request.headers.get("x-filename")
-          const contentType =
-            request.headers.get("content-type") || "application/octet-stream"
-
-          if (!filename) {
+          const fields = uploadFieldsFromHeaders(request.headers)
+          if (!fields) {
             return json({ error: "X-Filename header is required" }, 400)
           }
 
@@ -96,48 +84,19 @@ export const Route = createFileRoute("/api/upload")({
             return json({ error: "Request body is required" }, 400)
           }
 
-          const id = crypto.randomUUID().split("-")[0]
-          const r2Key = `uploads/${id}/${filename}`
-          const requestedMediaType = request.headers.get("x-media-type")
-          const mediaType =
-            requestedMediaType ||
-            (isVideoContentType(contentType) ? "video" : "image")
+          const id = newUploadId()
+          const r2Key = `uploads/${id}/${fields.filename}`
 
           await env.BUCKET.put(r2Key, request.body, {
-            httpMetadata: { contentType },
-            customMetadata: { originalName: filename },
+            httpMetadata: { contentType: fields.contentType },
+            customMetadata: { originalName: fields.filename },
           })
 
-          const size = parseOptionalInteger(
-            request.headers.get("content-length"),
-          )
+          const size =
+            parseOptionalInteger(request.headers.get("content-length")) ?? 0
+          await insertUpload({ id, r2Key, size, fields })
 
-          const rawTitle = request.headers.get("x-title")
-          const title = rawTitle
-            ? decodeURIComponent(rawTitle).trim().slice(0, 200) || null
-            : null
-
-          await db.insert(uploads).values({
-            id,
-            filename,
-            contentType,
-            size: size ?? 0,
-            width: parseOptionalInteger(request.headers.get("x-width")),
-            height: parseOptionalInteger(request.headers.get("x-height")),
-            r2Key,
-            mediaType,
-            duration: parseOptionalNumber(request.headers.get("x-duration")),
-            title,
-            socialEnabled: parseSocialEnabled(
-              request.headers.get("x-social-enabled"),
-            ),
-          })
-
-          const origin = new URL(request.url).origin
-          return json(
-            { id, url: `${origin}/${id}`, filename, size: size ?? 0 },
-            201,
-          )
+          return json(uploadCreatedBody(request, id, fields.filename, size), 201)
         }),
 
       OPTIONS: () => optionsResponse(),
