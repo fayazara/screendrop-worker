@@ -71,13 +71,16 @@ async function handle(request: Request, id: string) {
     let object = await env.BUCKET.head(key);
     if (!object) {
       try {
-        object = await upload.complete(parts);
+        await upload.complete(parts);
       } catch {
         return json({ error: "The upload or parts list is invalid" }, 400);
       }
+      // R2 completion responses omit metadata; read it from the stored object.
+      object = await env.BUCKET.head(key);
     }
-    const metadata = object.customMetadata?.uploadMetadata;
-    if (!metadata) return json({ error: "Upload metadata is missing" }, 400);
+    const metadata = object?.customMetadata?.uploadMetadata;
+    if (!object || !metadata)
+      return json({ error: "Upload metadata is missing" }, 400);
     const fields = JSON.parse(metadata) as Pick<
       typeof uploads.$inferInsert,
       | "filename"
